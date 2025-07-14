@@ -5,6 +5,72 @@ import axios from 'axios';
 
 import ReactMarkdown from 'react-markdown';
 
+// 마크다운 표를 HTML 테이블로 렌더링하는 함수
+function renderMarkdownTable(md) {
+  // 마크다운 표만 추출
+  const tableMatch = md.match(/\|.*\|/g);
+  if (!tableMatch) return null;
+  const rows = tableMatch.map(row => row.split('|').slice(1, -1).map(cell => cell.trim()));
+  if (rows.length < 2) return null;
+  const headers = rows[0];
+  const data = rows.slice(2); // 1: header, 2: separator, 3~: data
+  return (
+    <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
+      <thead>
+        <tr>{headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
+      </thead>
+      <tbody>
+        {data.map((row, ridx) => (
+          <tr key={ridx}>{row.map((cell, cidx) => <td key={cidx}>{cell}</td>)}</tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// 배열/오브젝트를 표로 변환
+function renderAutoTable(data) {
+  if (Array.isArray(data)) {
+    if (data.length === 0) return null;
+    if (typeof data[0] === 'object' && data[0] !== null) {
+      // 오브젝트 배열
+      const headers = Object.keys(data[0]);
+      return (
+        <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
+          <thead>
+            <tr>{headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {data.map((row, ridx) => (
+              <tr key={ridx}>{headers.map((h, cidx) => <td key={cidx}>{row[h]}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    } else {
+      // 단순 배열
+      return (
+        <table className="result-table" style={{ minWidth: 300, fontSize: '1.05em' }}>
+          <tbody>
+            {data.map((v, i) => <tr key={i}><td>{v}</td></tr>)}
+          </tbody>
+        </table>
+      );
+    }
+  } else if (typeof data === 'object' && data !== null) {
+    // 단일 오브젝트
+    const headers = Object.keys(data);
+    return (
+      <table className="result-table" style={{ minWidth: 300, fontSize: '1.05em' }}>
+        <tbody>
+          {headers.map((h, i) => <tr key={i}><th>{h}</th><td>{data[h]}</td></tr>)}
+        </tbody>
+      </table>
+    );
+  }
+  return null;
+}
+
 function ChatComponent({ selectedDb, databases, onDbChange }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -19,6 +85,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
 
   const [conversations, setConversations] = useState([]); // 대화 목록
   const [currentConversationId, setCurrentConversationId] = useState(null); // 현재 대화 ID
+  const [conversationSidebarCollapsed, setConversationSidebarCollapsed] = useState(false);
 
   // 추천 질문들 (카드형)
   const suggestedQuestions = [
@@ -293,23 +360,20 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     }
   };
 
-  // 메시지 전송
+  // (원복) splitQueries 및 handleSend 함수 제거, 기존 단일 쿼리 처리 방식으로 복구
   const handleSend = async () => {
     if (!input.trim() || !selectedDb) return;
-    
     if (!selectedAiModel) {
       alert('먼저 사용할 AI 모델을 선택해주세요.');
       return;
     }
-
     let conversationId = currentConversationId;
-
     // 현재 대화가 없으면 새로 생성
     if (!conversationId) {
       try {
         const newConvResponse = await axios.post('/api/conversations/new', new URLSearchParams({
           db_name: selectedDb,
-          title: input.substring(0, 30) // 첫 메시지를 제목으로 사용
+          title: input.substring(0, 30)
         }));
         if (newConvResponse.data.status === 'success') {
           conversationId = newConvResponse.data.conversation_id;
@@ -328,9 +392,8 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         return;
       }
     }
-    
-    const userMessage = { 
-      role: 'user', 
+    const userMessage = {
+      role: 'user',
       content: input,
       timestamp: new Date().toLocaleTimeString()
     };
@@ -341,23 +404,18 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-
     try {
       const formData = new FormData();
       formData.append('db_name', selectedDb);
-      
       // DB 스키마 정보를 포함한 향상된 프롬프트 생성
       let enhancedPrompt = input;
       if (dbSchema && dbSchema.tables && dbSchema.tables.length > 0) {
         const schemaInfo = generateSchemaPrompt(dbSchema);
         enhancedPrompt = `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[사용자 질문]\n${input}`;
       }
-      
       formData.append('prompt', enhancedPrompt);
-      formData.append('conversation_id', conversationId); // 대화 ID 전송
-
+      formData.append('conversation_id', conversationId);
       const response = await axios.post('/api/nl2sql', formData);
-
       if (response.data.status === 'success') {
         const data = response.data.message;
         const assistantMessage = {
@@ -378,7 +436,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         setMessages(prev => [...prev, errorMessage]);
       }
     } catch (error) {
-      console.error('요청 처리 중 오류 발생:', error);
       const errorMessage = {
         role: 'assistant',
         content: '죄송합니다. 요청 처리 중 오류가 발생했습니다.',
@@ -433,7 +490,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
   return (
     <div className="chat-page-container">
       {/* 대화 목록 사이드바 */}
-      <div className="conversation-sidebar">
+      <div className={`conversation-sidebar${conversationSidebarCollapsed ? ' collapsed' : ''}`}> 
         <div className="sidebar-header">
           <h3>💬 대화 목록</h3>
           <button 
@@ -446,45 +503,41 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           >
             ➕ 새 대화
           </button>
+          <button 
+            className="sidebar-toggle-btn"
+            style={{ marginLeft: 8 }}
+            onClick={() => setConversationSidebarCollapsed(v => !v)}
+            title={conversationSidebarCollapsed ? '대화목록 펼치기' : '대화목록 접기'}
+          >
+            {conversationSidebarCollapsed ? '▶' : '◀'}
+          </button>
         </div>
-        
-        <div className="conversation-list-container">
-          {conversations.length === 0 ? (
-            <div className="no-conversations">
-              <p>아직 대화가 없습니다.</p>
-              <p>새 대화를 시작해보세요!</p>
-            </div>
-          ) : (
-            <ul className="conversation-list list-group">
-              {conversations.map(conv => (
-                <li 
-                  key={conv.id} 
-                  className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-                  onClick={() => handleSelectConversation(conv.id)}
-                >
-                  <div className="conversation-content">
-                    <div className="conversation-title">
-                      {conv.title || '제목 없음'}
-                    </div>
-                    <div className="conversation-meta">
-                      <small>{new Date(conv.updated_at).toLocaleString()}</small>
-                    </div>
-                  </div>
-                  <button 
-                    className="btn btn-sm btn-outline-danger delete-btn"
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      handleDeleteConversation(conv.id); 
-                    }}
-                    title="대화 삭제"
+        {!conversationSidebarCollapsed && (
+          <div className="conversation-list-container">
+            {conversations.length === 0 ? (
+              <div className="no-conversations">
+                <p>아직 대화가 없습니다.</p>
+                <p>새 대화를 시작해보세요!</p>
+              </div>
+            ) : (
+              <ul className="conversation-list list-group">
+                {conversations.map(conv => (
+                  <li 
+                    key={conv.id}
+                    className={`conversation-item list-group-item${currentConversationId === conv.id ? ' active' : ''}`}
+                    onClick={() => handleSelectConversation(conv.id)}
                   >
-                    🗑️
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                    <div className="conversation-content">
+                      <div className="conversation-title">{conv.title}</div>
+                      <div className="conversation-meta">{conv.updated_at}</div>
+                    </div>
+                    <button className="delete-btn btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); handleDeleteConversation(conv.id); }}>삭제</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="chat-container">
@@ -636,31 +689,38 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                             <div className="section-header">
                               <strong>📊 쿼리 결과</strong>
                             </div>
-                            <div className="result-table-container">
-                              {Array.isArray(msg.result) && msg.result.length > 0 ? (
-                                <table className="result-table">
-                                  <thead>
-                                    <tr>
-                                      {Object.keys(msg.result[0] || {}).map((key, i) => (
-                                        <th key={i}>{key}</th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {msg.result.map((row, i) => (
-                                      <tr key={i}>
-                                        {Object.values(row).map((value, j) => (
-                                          <td key={j}>{String(value)}</td>
+                            <div className="result-table-container" style={{ maxWidth: '100%', overflowX: 'auto', minWidth: 600 }}>
+                              {/* headers/data 구조면 표로, 아니면 기존 방식 */}
+                              {msg.result.headers && msg.result.data ? (
+                                msg.result.data.length > 0 ? (
+                                  <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
+                                    <thead>
+                                      <tr>
+                                        {msg.result.headers.map((header, idx) => (
+                                          <th key={idx} style={{ padding: '8px 12px', background: '#f5f5f5', border: '1px solid #ddd' }}>{header}</th>
                                         ))}
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {msg.result.data.map((row, ridx) => (
+                                        <tr key={ridx}>
+                                          {row.map((cell, cidx) => (
+                                            <td key={cidx} style={{ padding: '8px 12px', border: '1px solid #eee', background: ridx % 2 === 0 ? '#fff' : '#fafbfc' }}>{cell === null ? '' : String(cell)}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <div style={{ color: '#888', padding: '16px' }}>데이터 없음</div>
+                                )
                               ) : (
-                                <div className="no-result">
-                                  <p>결과가 없습니다.</p>
-                                  <pre><code>{JSON.stringify(msg.result, null, 2)}</code></pre>
-                                </div>
+                                // 마크다운 표 자동 변환
+                                (typeof msg.result === 'string' && renderMarkdownTable(msg.result)) ||
+                                // 배열/오브젝트 자동 변환
+                                renderAutoTable(msg.result) ||
+                                // 기존 방식 fallback
+                                <pre style={{ fontSize: '1.05em', background: '#f8f8f8', padding: 12, borderRadius: 6, overflowX: 'auto' }}>{typeof msg.result === 'object' ? JSON.stringify(msg.result, null, 2) : String(msg.result)}</pre>
                               )}
                             </div>
                           </div>

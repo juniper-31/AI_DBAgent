@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 const CLOUDWATCH_METRICS = [
   { key: 'connections', name: 'DatabaseConnections', label: '연결 수', unit: '개', color: '#007bff' },
   { key: 'cpu', name: 'CPUUtilization', label: 'CPU 사용률', unit: '%', color: '#28a745' },
-  { key: 'memory', name: 'FreeableMemory', label: '사용 가능 메모리', unit: 'MB', color: '#ffc107' },
+  { key: 'memory', name: 'FreeableMemory', label: '남은 메모리', unit: 'GB', color: '#ffc107' }, // 수정: 카드 제목/단위
   { key: 'storage', name: 'FreeStorageSpace', label: '사용 가능 스토리지', unit: 'GB', color: '#6f42c1' },
   { key: 'read_iops', name: 'ReadIOPS', label: '읽기 IOPS', unit: '', color: '#17a2b8' },
   { key: 'write_iops', name: 'WriteIOPS', label: '쓰기 IOPS', unit: '', color: '#fd7e14' }
@@ -19,6 +19,7 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
   const [refreshInterval, setRefreshInterval] = useState(30);
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const intervalRef = useRef(null);
+  const [instanceType, setInstanceType] = useState('');
 
   const timeRanges = [
     { value: '1h', label: '1시간' },
@@ -181,6 +182,20 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
   const selectedDbObj = databases?.find(db => db.name === selectedDb);
   const cloudwatchId = selectedDbObj?.cloudwatch_id;
 
+  // 인스턴스 타입 정보 불러오기
+  useEffect(() => {
+    setInstanceType('');
+    if (!cloudwatchId) return;
+    fetch(`/api/monitoring/cloudwatch/rds-info/${cloudwatchId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success' && data.instance_info?.instance_class) {
+          setInstanceType(data.instance_info.instance_class);
+        }
+      })
+      .catch(() => {});
+  }, [cloudwatchId]);
+
   return (
     <div className="monitoring-component improved">
       {/* 헤더 */}
@@ -192,7 +207,13 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
               선택된 DB: {selectedDb}
               {cloudwatchId && (
                 <span style={{ fontSize: '13px', color: '#888', marginLeft: 12 }}>
-                  (CloudWatch ID: <b>{cloudwatchId}</b>)
+                  (CloudWatch ID: <b>{cloudwatchId}</b>
+                  {instanceType && (
+                    <span style={{ marginLeft: 8 }}>
+                      | 인스턴스 타입: <b>{instanceType}</b>
+                    </span>
+                  )}
+                  )
                 </span>
               )}
             </span>
@@ -267,13 +288,15 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
               const data = metrics[metric.key] || [];
               const latest = data.length > 0 ? data[data.length - 1].value : null;
               let displayValue = latest;
-              if (metric.key === 'memory' && latest !== null) displayValue = Math.round(latest); // MB
-              if (metric.key === 'storage' && latest !== null) displayValue = Math.round(latest); // GB
-              const chartData = formatChartData(data, metric.key);
+              // 모든 지표 소수점 2자리로 표시
+              if (latest !== null && latest !== undefined && !isNaN(latest)) {
+                if (metric.key === 'memory') displayValue = (latest / 1024 / 1024 / 1024).toFixed(2); // GB
+                else displayValue = Number(latest).toFixed(2);
+              }
+              if (metric.key === 'storage' && latest !== null) displayValue = Math.round(latest); // GB (스토리지는 정수)
               return (
                 <div key={metric.key} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {renderMetricCard(metric.label, displayValue, metric.unit, metric.color, errors[metric.key])}
-                  {renderChart('', chartData, metric.color, metric.unit, errors[metric.key])}
                 </div>
               );
             })}
