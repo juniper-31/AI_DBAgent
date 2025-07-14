@@ -1,0 +1,516 @@
+{% extends "layout.html" %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.integration-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.integration-section { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.integration-section h3 { margin-top: 0; color: #1976d2; }
+.form-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
+.radio-inline { margin-right: 15px; }
+.metrics-controls, .slow-query-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.metrics-controls label, .slow-query-controls label { display: flex; flex-direction: column; gap: 5px; }
+.metrics-controls select, .slow-query-controls select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+button { background: #1976d2; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+button:hover { background: #1565c0; }
+.rds-list ul { list-style: none; padding: 0; }
+.rds-list li { padding: 10px; border: 1px solid #eee; margin-bottom: 5px; border-radius: 4px; }
+.metrics-chart-container { margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+.metrics-chart-title { font-weight: bold; margin-bottom: 15px; text-align: center; }
+/* 슬로우 쿼리 분석 스타일 */
+.slow-query-summary { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+.slow-query-summary h4 { margin-top: 0; color: #1976d2; }
+.slow-query-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.chart-container { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+.chart-container h4 { margin-top: 0; color: #1976d2; text-align: center; }
+.slow-query-details { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+.slow-query-details h4 { margin-top: 0; color: #d32f2f; }
+.query-item { background: #f5f5f5; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #d32f2f; }
+.query-duration { font-weight: bold; color: #d32f2f; font-size: 1.1em; }
+.query-text { background: #fff; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; margin-top: 10px; border: 1px solid #ddd; }
+.query-time { color: #666; font-size: 0.9em; margin-top: 5px; }
+.summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
+.stat-item { text-align: center; padding: 15px; background: white; border-radius: 6px; border: 1px solid #ddd; }
+.stat-value { font-size: 1.5em; font-weight: bold; color: #1976d2; }
+.stat-label { font-size: 0.9em; color: #666; margin-top: 5px; }
+@media (max-width: 768px) { .slow-query-charts { grid-template-columns: 1fr; } .metrics-controls, .slow-query-controls { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block title %}AWS Integration{% endblock %}
+{% block content %}
+<div class="integration-container">
+    <h2>🧩 AWS Integration</h2>
+    <div class="integration-section">
+        <h3>1. 인증 방식 선택</h3>
+        <div id="current-auth" style="margin-bottom:10px; color:#1976d2; font-weight:bold;"></div>
+        <form id="auth-form">
+            <div class="form-row">
+                <label class="radio-inline"><input type="radio" name="auth_type" value="role"> IAM Role 사용 (EC2/ECS/Lambda 권장)</label>
+                <label class="radio-inline"><input type="radio" name="auth_type" value="iam"> IAM Access Key/Secret Key</label>
+                <label class="radio-inline"><input type="radio" name="auth_type" value="sso"> SSO/MFA (Session Token 포함)</label>
+            </div>
+            <div class="form-row" id="iam-fields" style="display:none; flex-direction:column; gap:0;">
+                <label>Access Key <input type="text" name="access_key"></label>
+                <label>Secret Key <input type="password" name="secret_key"></label>
+                <label>Region <input type="text" name="region" value="ap-northeast-2"></label>
+            </div>
+            <div class="form-row" id="sso-fields" style="display:none; flex-direction:column; gap:0;">
+                <label>Access Key <input type="text" name="sso_access_key"></label>
+                <label>Secret Key <input type="password" name="sso_secret_key"></label>
+                <label>Session Token <input type="text" name="session_token"></label>
+                <label>Region <input type="text" name="sso_region" value="ap-northeast-2"></label>
+            </div>
+            <button type="submit">인증 설정</button>
+        </form>
+        <div id="auth-result" style="margin-top:10px;"></div>
+    </div>
+    <div class="integration-section">
+        <h3>2. RDS 인스턴스 목록 조회</h3>
+        <button onclick="fetchRdsList()">RDS 목록 불러오기</button>
+        <div class="rds-list" id="rds-list"></div>
+    </div>
+    <div class="integration-section">
+        <h3>3. CloudWatch 메트릭 조회</h3>
+        <div class="metrics-controls">
+            <label>RDS 인스턴스
+                <select id="rds-select"></select>
+            </label>
+            <label>메트릭
+                <select id="metric-select">
+                    <option value="CPUUtilization">CPUUtilization</option>
+                    <option value="DatabaseConnections">DatabaseConnections</option>
+                    <option value="FreeableMemory">FreeableMemory</option>
+                    <option value="ReadIOPS">ReadIOPS</option>
+                    <option value="WriteIOPS">WriteIOPS</option>
+                </select>
+            </label>
+            <label>시간 범위
+                <select id="time-range">
+                    <option value="60">1시간</option>
+                    <option value="180">3시간</option>
+                    <option value="720">12시간</option>
+                    <option value="1440">1일</option>
+                </select>
+            </label>
+            <button onclick="fetchMetrics()">메트릭 조회</button>
+        </div>
+        <div class="metrics-chart-container">
+            <div class="metrics-chart-title" id="metrics-chart-title"></div>
+            <canvas id="metrics-chart" height="120"></canvas>
+        </div>
+    </div>
+    
+    <!-- 새로운 슬로우 쿼리 분석 섹션 추가 -->
+    <div class="integration-section">
+        <h3>4. 🔍 CloudWatch Logs 슬로우 쿼리 분석</h3>
+        <div class="slow-query-controls">
+            <label>RDS 인스턴스
+                <select id="slow-query-rds-select"></select>
+            </label>
+            <label>분석 시간 범위
+                <select id="slow-query-hours">
+                    <option value="1">1시간</option>
+                    <option value="6">6시간</option>
+                    <option value="24" selected>24시간</option>
+                    <option value="72">3일</option>
+                    <option value="168">1주일</option>
+                </select>
+            </label>
+            <button onclick="analyzeSlowQueries()" id="analyze-btn">슬로우 쿼리 분석</button>
+        </div>
+        
+        <div id="slow-query-loading" style="display:none; text-align:center; padding:20px;">
+            <div>🔍 슬로우 쿼리를 분석하고 있습니다...</div>
+            <div style="font-size:0.9em; color:#666; margin-top:10px;">로그 그룹과 스트림을 조회하고 있습니다. 잠시만 기다려주세요.</div>
+        </div>
+        
+        <div id="slow-query-results" style="display:none;">
+            <div class="slow-query-summary">
+                <h4>📊 분석 요약</h4>
+                <div id="slow-query-summary-content"></div>
+            </div>
+            
+            <div class="slow-query-charts">
+                <div class="chart-container">
+                    <h4>⏱️ 쿼리 실행 시간 분포</h4>
+                    <canvas id="duration-distribution-chart" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>📈 시간별 슬로우 쿼리 발생</h4>
+                    <canvas id="slow-query-timeline-chart" height="200"></canvas>
+                </div>
+            </div>
+            
+            <div class="slow-query-details">
+                <h4>🐌 상위 슬로우 쿼리 (Top 10)</h4>
+                <div id="slow-query-details-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const authForm = document.getElementById('auth-form');
+const iamFields = document.getElementById('iam-fields');
+const ssoFields = document.getElementById('sso-fields');
+const currentAuth = document.getElementById('current-auth');
+
+// 인증 방식/입력값 localStorage 저장/복원
+function saveAuthState() {
+    const type = authForm.auth_type.value;
+    const state = { auth_type: type };
+    
+    if (type === 'iam') {
+        state.access_key = authForm.access_key.value;
+        state.secret_key = authForm.secret_key.value;
+        state.region = authForm.region.value;
+    } else if (type === 'sso') {
+        state.access_key = authForm.sso_access_key.value;
+        state.secret_key = authForm.sso_secret_key.value;
+        state.session_token = authForm.session_token.value;
+        state.region = authForm.sso_region.value;
+    }
+    
+    localStorage.setItem('aws_auth_state', JSON.stringify(state));
+}
+
+function loadAuthState() {
+    const saved = localStorage.getItem('aws_auth_state');
+    if (saved) {
+        const state = JSON.parse(saved);
+        authForm.auth_type.value = state.auth_type;
+        
+        if (state.auth_type === 'iam') {
+            authForm.access_key.value = state.access_key || '';
+            authForm.secret_key.value = state.secret_key || '';
+            authForm.region.value = state.region || 'ap-northeast-2';
+        } else if (state.auth_type === 'sso') {
+            authForm.sso_access_key.value = state.access_key || '';
+            authForm.sso_secret_key.value = state.secret_key || '';
+            authForm.session_token.value = state.session_token || '';
+            authForm.sso_region.value = state.region || 'ap-northeast-2';
+        }
+        
+        updateAuthFields();
+    }
+}
+
+function showCurrentAuth() {
+    const type = authForm.auth_type.value;
+    if (type === 'role') {
+        currentAuth.innerText = '🔐 IAM Role 사용 중';
+    } else if (type === 'iam') {
+        currentAuth.innerText = '🔑 IAM Access Key 사용 중';
+    } else if (type === 'sso') {
+        currentAuth.innerText = '🔐 SSO/MFA 사용 중';
+    }
+}
+
+function updateAuthFields() {
+    const type = authForm.auth_type.value;
+    iamFields.style.display = (type === 'iam') ? 'flex' : 'none';
+    ssoFields.style.display = (type === 'sso') ? 'flex' : 'none';
+}
+
+authForm.addEventListener('change', function() {
+    updateAuthFields();
+    saveAuthState();
+});
+
+updateAuthFields();
+loadAuthState();
+
+// 인증 설정
+authForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const type = authForm.auth_type.value;
+    let body = {};
+    if (type === 'role') {
+        body = { auth_type: 'role' };
+    } else if (type === 'iam') {
+        body = {
+            auth_type: 'iam',
+            access_key: authForm.access_key.value,
+            secret_key: authForm.secret_key.value,
+            region: authForm.region.value
+        };
+    } else if (type === 'sso') {
+        body = {
+            auth_type: 'sso',
+            access_key: authForm.sso_access_key.value,
+            secret_key: authForm.sso_secret_key.value,
+            session_token: authForm.session_token.value,
+            region: authForm.sso_region.value
+        };
+    }
+    const res = await fetch('/aws/auth', {
+        method: 'POST',
+        body: new URLSearchParams(body)
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        document.getElementById('auth-result').innerText = '✅ 인증 성공!';
+        saveAuthState();
+        showCurrentAuth();
+    } else {
+        document.getElementById('auth-result').innerText = '❌ 인증 실패';
+    }
+});
+
+// RDS 목록 조회
+async function fetchRdsList() {
+    const res = await fetch('/aws/rds-instances');
+    const data = await res.json();
+    const listDiv = document.getElementById('rds-list');
+    if (data.instances && data.instances.length > 0) {
+        let html = '<ul>';
+        // Aurora 클러스터명/일반 인스턴스명 분리
+        const clusterSet = new Set();
+        const instanceSet = new Set();
+        data.instances.forEach(inst => {
+            const id = inst.DBInstanceIdentifier;
+            const engine = inst.Engine;
+            const status = inst.DBInstanceStatus;
+            const endpoint = inst.Endpoint ? inst.Endpoint.Address : '';
+            const port = inst.Endpoint ? inst.Endpoint.Port : '';
+            // Aurora 계열이면 클러스터명만 노출
+            if (inst.Engine && inst.Engine.includes('aurora') && inst.DBClusterIdentifier) {
+                clusterSet.add(inst.DBClusterIdentifier);
+            } else {
+                instanceSet.add(id);
+            }
+            html += `<li><b>${id}</b> (${engine}, ${status})`;
+            if (endpoint && port && status === 'available') {
+                html += ` <button style='margin-left:10px;' onclick="registerDb('${id}','${endpoint}',${port})">DB 등록</button>`;
+            }
+            html += '</li>';
+        });
+        html += '</ul>';
+        listDiv.innerHTML = html;
+        // select에도 반영 (Aurora 클러스터명 + 일반 인스턴스명, 중복 제거)
+        const select = document.getElementById('rds-select');
+        const slowQuerySelect = document.getElementById('slow-query-rds-select');
+        let options = '';
+        clusterSet.forEach(cluster => { options += `<option value="${cluster}">${cluster} (클러스터)</option>`; });
+        instanceSet.forEach(inst => { options += `<option value="${inst}">${inst}</option>`; });
+        select.innerHTML = options;
+        slowQuerySelect.innerHTML = options;
+    } else {
+        listDiv.innerHTML = '<i>RDS 인스턴스가 없습니다.</i>';
+    }
+}
+
+async function registerDb(name, host, port) {
+    const res = await fetch('/databases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            name, host, port,
+            user: '', password: '', dbname: ''
+        })
+    });
+    if (res.ok) {
+        alert('DB가 임시 등록되었습니다! 계정/암호/DB명을 입력해 주세요.');
+        window.location.href = '/databases';
+    } else {
+        alert('DB 등록 실패');
+    }
+}
+
+// Chart.js 메트릭 그래프
+let metricsChart = null;
+async function fetchMetrics() {
+    const dbId = document.getElementById('rds-select').value;
+    const metric = document.getElementById('metric-select').value;
+    const minutes = parseInt(document.getElementById('time-range').value);
+    const res = await fetch(`/aws/rds-metrics?db_identifier=${dbId}&metric_name=${metric}&minutes=${minutes}`);
+    const data = await res.json();
+    const title = `${dbId} / ${metric} (${minutes/60}시간)`;
+    document.getElementById('metrics-chart-title').innerText = title;
+    const ctx = document.getElementById('metrics-chart').getContext('2d');
+    let labels = [];
+    let values = [];
+    if (data.datapoints && data.datapoints.length > 0) {
+        // 시간순 정렬
+        data.datapoints.sort((a,b)=>new Date(a.Timestamp)-new Date(b.Timestamp));
+        labels = data.datapoints.map(dp => new Date(dp.Timestamp).toLocaleString());
+        values = data.datapoints.map(dp => dp.Average ?? dp.Maximum ?? dp.Minimum ?? 0);
+    }
+    if (metricsChart) metricsChart.destroy();
+    metricsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: metric,
+                data: values,
+                borderColor: '#1976d2',
+                backgroundColor: 'rgba(25,118,210,0.08)',
+                tension: 0.3,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: true, title: { display: false } },
+                y: { display: true, title: { display: false }, beginAtZero: false }
+            }
+        }
+    });
+}
+
+// 슬로우 쿼리 분석 차트들
+let durationDistributionChart = null;
+let slowQueryTimelineChart = null;
+
+async function analyzeSlowQueries() {
+    const dbId = document.getElementById('slow-query-rds-select').value;
+    const hours = parseInt(document.getElementById('slow-query-hours').value);
+    
+    if (!dbId) {
+        alert('RDS 인스턴스를 선택해주세요.');
+        return;
+    }
+    
+    // 로딩 표시
+    document.getElementById('slow-query-loading').style.display = 'block';
+    document.getElementById('slow-query-results').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = true;
+    
+    try {
+        const res = await fetch(`/aws/slow-queries?db_identifier=${dbId}&hours=${hours}`);
+        const data = await res.json();
+        
+        if (res.ok) {
+            displaySlowQueryResults(data);
+        } else {
+            alert('슬로우 쿼리 분석 실패: ' + data.detail);
+        }
+    } catch (error) {
+        alert('슬로우 쿼리 분석 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+        document.getElementById('slow-query-loading').style.display = 'none';
+        document.getElementById('analyze-btn').disabled = false;
+    }
+}
+
+function displaySlowQueryResults(data) {
+    const { analysis, slow_queries, db_identifier, hours } = data;
+    
+    // 요약 정보 표시
+    const summaryContent = document.getElementById('slow-query-summary-content');
+    summaryContent.innerHTML = `
+        <div class="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value">${analysis.total_count}</div>
+                <div class="stat-label">총 슬로우 쿼리</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${(analysis.avg_duration / 1000).toFixed(1)}s</div>
+                <div class="stat-label">평균 실행 시간</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${(analysis.max_duration / 1000).toFixed(1)}s</div>
+                <div class="stat-label">최대 실행 시간</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${(analysis.total_duration / 1000).toFixed(1)}s</div>
+                <div class="stat-label">총 실행 시간</div>
+            </div>
+        </div>
+        <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+            📊 ${db_identifier} | 최근 ${hours}시간 분석 | 로그 그룹 ${data.log_groups_count}개
+        </div>
+    `;
+    
+    // 실행 시간 분포 차트
+    const distributionCtx = document.getElementById('duration-distribution-chart').getContext('2d');
+    if (durationDistributionChart) durationDistributionChart.destroy();
+    
+    const distributionData = analysis.duration_distribution;
+    durationDistributionChart = new Chart(distributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(distributionData),
+            datasets: [{
+                data: Object.values(distributionData),
+                backgroundColor: [
+                    '#4caf50', '#8bc34a', '#ffeb3b', '#ff9800', '#f44336', '#9c27b0'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    
+    // 시간별 슬로우 쿼리 발생 차트
+    const timelineCtx = document.getElementById('slow-query-timeline-chart').getContext('2d');
+    if (slowQueryTimelineChart) slowQueryTimelineChart.destroy();
+    
+    // 시간별 그룹핑
+    const hourlyData = {};
+    slow_queries.forEach(query => {
+        const hour = new Date(query.timestamp).toLocaleString('ko-KR', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric'
+        });
+        hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+    });
+    
+    const timelineLabels = Object.keys(hourlyData).sort();
+    const timelineValues = timelineLabels.map(hour => hourlyData[hour]);
+    
+    slowQueryTimelineChart = new Chart(timelineCtx, {
+        type: 'bar',
+        data: {
+            labels: timelineLabels,
+            datasets: [{
+                label: '슬로우 쿼리 수',
+                data: timelineValues,
+                backgroundColor: '#d32f2f',
+                borderColor: '#b71c1c',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+    
+    // 상위 슬로우 쿼리 상세 정보
+    const detailsContent = document.getElementById('slow-query-details-content');
+    if (analysis.top_queries.length > 0) {
+        let detailsHtml = '';
+        analysis.top_queries.forEach((query, index) => {
+            detailsHtml += `
+                <div class="query-item">
+                    <div class="query-duration">#${index + 1} - ${(query.duration / 1000).toFixed(2)}초</div>
+                    <div class="query-time">${query.datetime}</div>
+                    <div class="query-text">${query.query}</div>
+                </div>
+            `;
+        });
+        detailsContent.innerHTML = detailsHtml;
+    } else {
+        detailsContent.innerHTML = '<p>슬로우 쿼리가 발견되지 않았습니다.</p>';
+    }
+    
+    // 결과 표시
+    document.getElementById('slow-query-results').style.display = 'block';
+}
+
+// 페이지 진입 시 인증 상태 표시
+showCurrentAuth();
+</script>
+{% endblock %} 

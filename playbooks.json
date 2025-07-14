@@ -1,0 +1,51 @@
+[
+  {
+    "name": "generalMonitoring",
+    "type": "Built-in",
+    "description": "General monitoring of the database, checking logs, slow queries, main metrics, etc.",
+    "steps": [
+      {
+        "title": "Check CPU Utilization",
+        "prompt": "데이터베이스의 현재 CPU 사용률은 어떤가요?"
+      },
+      {
+        "title": "Review Freeable Memory",
+        "prompt": "현재 사용 가능한 메모리는 얼마나 되나요?"
+      },
+      {
+        "title": "Check Database Connections",
+        "prompt": "현재 활성화된 데이터베이스 연결 수는 몇 개인가요?"
+      },
+      {
+        "title": "Evaluate Slow Queries",
+        "prompt": "지난 1시간 동안 가장 느렸던 쿼리 5개를 보여주세요."
+      }
+    ]
+  },
+  {
+    "name": "investigateSlowQueries",
+    "type": "Built-in",
+    "description": "Investigate slow queries using pg_stat_statements and EXPLAIN calls.",
+    "steps": [
+        {
+            "title": "Get top 10 slow queries",
+            "prompt": "실행 시간이 가장 오래 걸린 쿼리 10개를 보여줘."
+        },
+        {
+            "title": "Explain a specific slow query",
+            "prompt": "위 쿼리 중 첫번째 쿼리에 대해 EXPLAIN ANALYZE를 실행해줘."
+        }
+    ]
+  },
+  {
+    "name": "investigateHighCpuUsage",
+    "type": "Built-in",
+    "description": "Investigate high CPU usage. This playbook should be execute while the CPU usage is elevated.",
+     "steps": [
+        {
+            "title": "Identify CPU-intensive queries",
+            "prompt": "CPU를 가장 많이 사용한 쿼리 10개를 보여줘."
+        }
+    ]
+  }
+] 

@@ -1,0 +1,127 @@
+{% extends "layout.html" %}
+
+{% block head_extra %}
+<style>
+/* nl2sql_chat.html 전용 스타일 */
+.main-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    /* 전체 뷰포트 높이에서 사이드바 상단 여백(20px)만큼 빼줍니다 */
+    height: calc(100vh - 20px);
+}
+.container {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    height: 100%;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+    background: #f7f8fa;
+}
+</style>
+{% endblock %}
+
+{% block title %}자연어→SQL 채팅{% endblock %}
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <div style="flex-grow: 1;">
+            <form method="post" action="/nl2sql" id="db-select-form">
+                <label for="db_name" class="prompt-label">DB 선택</label>
+                <select name="db_name" id="db_name" onchange="document.getElementById('db-select-form').submit();">
+                    {% for db in databases %}
+                        <option value="{{ db.name }}" {% if db.name == selected_db_name %}selected{% endif %}>
+                            {{ db.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <form method="post" action="/nl2sql/reset" style="margin-left: 10px;">
+            <input type="hidden" name="db_name" value="{{ selected_db_name }}">
+            <button type="submit">대화 초기화</button>
+        </form>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-box">
+        {# 카드형 추천 질문: 첫 대화 전만 노출 #}
+        {% if not chat_history %}
+            <div class="suggest-cards">
+                <div class="suggest-card" onclick="setPrompt('오늘 가장 오래 걸린 쿼리 보여줘')">오늘 가장 오래 걸린 쿼리 보여줘</div>
+                <div class="suggest-card" onclick="setPrompt('가장 row가 많은 테이블 알려줘')">가장 row가 많은 테이블 알려줘</div>
+                <div class="suggest-card" onclick="setPrompt('슬로우 쿼리 10개만 보여줘')">슬로우 쿼리 10개만 보여줘</div>
+                <div class="suggest-card" onclick="setPrompt('테이블별 row 수와 크기 알려줘')">테이블별 row 수와 크기 알려줘</div>
+            </div>
+        {% endif %}
+
+        {% for msg in chat_history %}
+            {% if msg.sender == 'user' %}
+                <div class="msg-user"><div class="msg-bubble">{{ msg.content }}</div></div>
+            {% elif msg.sender == 'assistant' %}
+                <div class="msg-ai">
+                    <div class="msg-bubble">
+                        {% if msg.content %}<div style="margin-bottom:8px;">{{ msg.content|safe }}</div>{% endif %}
+                        {% if msg.sql %}<div class="sql-block"><b>SQL</b><br><pre><code>{{ msg.sql }}</code></pre></div>{% endif %}
+                        {% if msg.result %}
+                            <div class="result-block">
+                                <b>실행 결과</b><br>
+                                {% if msg.result is mapping and msg.result.headers %}
+                                    {% if msg.result.data %}
+                                        <table>
+                                            <thead><tr>{% for header in msg.result.headers %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+                                            <tbody>
+                                                {% for row in msg.result.data %}
+                                                    <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    {% else %}<p>(0개의 행이 반환되었습니다)</p>{% endif %}
+                                {% else %}<pre><code>{{ msg.result }}</code></pre>{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <form method="post" action="/nl2sql" id="chat-form">
+            <input type="hidden" name="db_name" value="{{ selected_db_name }}">
+            <textarea name="prompt" id="prompt-input" rows="1" placeholder="질문을 입력하세요... (Shift+Enter로 줄바꿈)"></textarea>
+            <button type="submit">전송</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function setPrompt(text) {
+    const textarea = document.getElementById('prompt-input');
+    textarea.value = text;
+    textarea.focus();
+    autoResizeTextarea(textarea);
+}
+
+const textarea = document.getElementById('prompt-input');
+function autoResizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight) + 'px';
+}
+
+textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+textarea.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('chat-form').submit();
+    }
+});
+
+// 페이지 로드 시 채팅창을 맨 아래로 스크롤
+const chatMessages = document.getElementById('chat-messages');
+chatMessages.scrollTop = chatMessages.scrollHeight;
+</script>
+{% endblock %} 

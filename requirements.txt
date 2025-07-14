@@ -1,0 +1,14 @@
+openai
+psycopg2-binary
+mysql-connector-python
+python-dotenv
+fastapi
+jinja2
+uvicorn
+itsdangerous
+python-multipart
+pydantic
+boto3 
+pyyaml 
+google-generativeai
+anthropic

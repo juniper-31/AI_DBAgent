@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block title %}슬로우 쿼리{% endblock %}
+{% block content %}
+<h2>슬로우 쿼리 탐지</h2>
+{% if slow_queries %}
+    <table>
+        <tr><th>실행 시간(초)</th><th>쿼리</th></tr>
+        {% for qt, q in slow_queries %}
+            <tr><td>{{ qt }}</td><td><pre>{{ q }}</pre></td></tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>슬로우 쿼리가 없거나, 로그 파일을 찾을 수 없습니다.</p>
+    <p>환경변수 <code>SLOW_QUERY_LOG</code>에 로그 파일 경로를 설정해주세요.</p>
+{% endif %}
+{% endblock %} 

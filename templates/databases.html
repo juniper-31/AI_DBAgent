@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+
+{% block title %}DB 관리{% endblock %}
+
+{% block content %}
+<h2>DB 연결 관리</h2>
+<form method="post" action="/databases">
+    이름(별칭):<br>
+    <input type="text" name="name" required placeholder="예: 개발 DB, 운영 DB..."><br>
+    DB 호스트:<br>
+    <input type="text" name="host" required><br>
+    DB 포트:<br>
+    <input type="text" name="port" value="5432" required><br>
+    DB 사용자:<br>
+    <input type="text" name="user"><br>
+    DB 비밀번호:<br>
+    <input type="password" name="password"><br>
+    <div style="margin:8px 0;">
+        <label><input type="checkbox" id="all-db-check" onchange="toggleDbnameInput(this)"> 전체 DB 조회</label>
+    </div>
+    DB 이름:<br>
+    <input type="text" name="dbname" id="dbname-input"><br>
+    <button type="submit">테스트 및 추가</button>
+    {% if error %}
+        <p class="error">연결 실패: {{ error }}</p>
+    {% endif %}
+</form>
+
+<hr>
+
+<h3>등록된 DB 목록</h3>
+{% if databases %}
+<table>
+    <tr><th>이름</th><th>호스트</th><th>사용자</th><th>DB명</th><th>관리</th></tr>
+    {% for db in databases %}
+    <tr id="db-row-{{ db.name }}">
+        <td>{{ db.name }}</td>
+        <td>{{ db.host }}:{{ db.port }}</td>
+        <td id="user-{{ db.name }}">{% if not db.user or not db.password or not db.dbname %}<span style="color:#d32f2f;font-weight:bold;">⚠️ 정보 미입력</span>{% else %}{{ db.user }}{% endif %}</td>
+        <td id="dbname-{{ db.name }}">{% if not db.dbname %}<span style="color:#d32f2f;font-weight:bold;">⚠️ 정보 미입력</span>{% else %}{{ db.dbname }}{% endif %}</td>
+        <td>
+            <form method="post" action="/databases/select" style="display:inline">
+                <input type="hidden" name="name" value="{{ db.name }}">
+                <button type="submit" {% if selected_db_name == db.name %}disabled{% endif %}>선택</button>
+            </form>
+            <form method="post" action="/databases/delete" style="display:inline">
+                <input type="hidden" name="name" value="{{ db.name }}">
+                <button type="submit">삭제</button>
+            </form>
+            <button type="button" onclick="showEditForm('{{ db.name }}')">수정</button>
+        </td>
+    </tr>
+    <tr id="edit-row-{{ db.name }}" style="display:none; background:#f8f9fa;">
+        <td colspan="5">
+            <form onsubmit="return submitEditForm(event, '{{ db.name }}')">
+                사용자: <input type="text" name="user" value="{{ db.user }}" style="width:120px;">
+                비밀번호: <input type="password" name="password" value="{{ db.password }}" style="width:120px;">
+                <label style="margin-left:10px;"><input type="checkbox" class="all-db-edit-check" onchange="toggleEditDbnameInput(this, '{{ db.name }}')"> 전체 DB 조회</label>
+                DB명: <input type="text" name="dbname" id="edit-dbname-{{ db.name }}" value="{{ db.dbname }}" style="width:120px;">
+                <button type="submit">저장</button>
+                <button type="button" onclick="hideEditForm('{{ db.name }}')">취소</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>등록된 DB가 없습니다.</p>
+{% endif %}
+<script>
+function showEditForm(name) {
+    document.getElementById('edit-row-' + name).style.display = '';
+}
+function hideEditForm(name) {
+    document.getElementById('edit-row-' + name).style.display = 'none';
+}
+async function submitEditForm(e, name) {
+    e.preventDefault();
+    const form = e.target;
+    const user = form.user.value;
+    const password = form.password.value;
+    const dbname = form.dbname.value;
+    const res = await fetch('/databases/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ name, user, password, dbname })
+    });
+    if (res.ok) {
+        location.reload();
+    } else {
+        alert('수정 실패');
+    }
+    return false;
+}
+function toggleDbnameInput(checkbox) {
+    const dbnameInput = document.getElementById('dbname-input');
+    if (checkbox.checked) {
+        dbnameInput.value = '';
+        dbnameInput.disabled = true;
+    } else {
+        dbnameInput.disabled = false;
+    }
+}
+function toggleEditDbnameInput(checkbox, name) {
+    const dbnameInput = document.getElementById('edit-dbname-' + name);
+    if (checkbox.checked) {
+        dbnameInput.value = '';
+        dbnameInput.disabled = true;
+    } else {
+        dbnameInput.disabled = false;
+    }
+}
+</script>
+{% endblock %} 

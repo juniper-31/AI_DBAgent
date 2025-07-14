@@ -1,0 +1,38 @@
+
+# Agent Configuration
+
+# Agent settings
+agent:
+  loop_interval_seconds: 60 # How often the agent checks the databases (in seconds)
+
+# Databases to monitor
+databases:
+  - name: "local_postgres"
+    # Connection details will be sourced from the main application's database connections
+    # UI에서 설정한 DB 연결 정보 중 'name'이 일치하는 것을 찾아 사용합니다.
+
+# Playbooks define what to check for each database
+playbooks:
+  - name: "PostgreSQL Health Check"
+    database_name: "local_postgres" # Which database this playbook applies to
+    enabled: true
+    triggers:
+      # Trigger for high CPU usage
+      - metric: "cpu_usage"
+        threshold: 80 # percent
+        operator: ">="
+        action: "diagnose_high_cpu"
+
+      # Trigger for high memory usage
+      - metric: "memory_usage"
+        threshold: 80 # percent
+        operator: ">="
+        action: "diagnose_high_memory"
+
+      # Trigger for slow queries
+      # Note: This requires configuring and parsing PostgreSQL logs
+      - metric: "slow_queries"
+        threshold: 5 # count of slow queries longer than 'min_duration_seconds'
+        operator: ">="
+        min_duration_seconds: 5
+        action: "list_slow_queries"

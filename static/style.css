@@ -1,0 +1,281 @@
+body {
+    font-family: 'Segoe UI', 'Malgun Gothic', Arial, sans-serif;
+    background: #f7f8fa;
+    margin: 0;
+    padding: 0;
+}
+.wrapper {
+    display: flex;
+    height: 100vh;
+}
+.sidebar {
+    width: 240px;
+    background: #2d3e50;
+    color: #fff;
+    padding-top: 20px;
+}
+.sidebar h2 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 30px;
+}
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+.sidebar ul li a {
+    display: block;
+    padding: 15px 25px;
+    color: #fff;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background 0.2s, border-left 0.2s;
+}
+.sidebar ul li a:hover, .sidebar ul li a.active {
+    background: #3c5168;
+    border-left: 3px solid #00aaff;
+}
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+}
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 30px 40px 40px 40px;
+}
+h1, h2, h3 {
+    color: #2d3e50;
+}
+button, input[type="submit"] {
+    background: #0078ff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 18px;
+    font-size: 1em;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+button:hover, input[type="submit"]:hover {
+    background: #005bb5;
+}
+input, select, textarea {
+    border: 1px solid #cfd8dc;
+    border-radius: 4px;
+    padding: 7px 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    width: 100%;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 15px;
+    background: #fafbfc;
+}
+table, th, td {
+    border: 1px solid #e0e0e0;
+}
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+th {
+    background: #f0f4f8;
+}
+pre {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+.error {
+    color: #d32f2f;
+    font-weight: bold;
+}
+.success {
+    color: #388e3c;
+    font-weight: bold;
+}
+
+/* 중앙 정렬 채팅 */
+.chat-box {
+    max-width: 520px;
+    margin: 0 auto;
+    margin-top: 30px;
+}
+
+/* 카드형 추천 질문 */
+.suggest-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+.suggest-card {
+    background: #f0f4f8;
+    border-radius: 12px;
+    padding: 18px 24px;
+    font-size: 1.08em;
+    color: #222;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: background 0.2s, box-shadow 0.2s;
+    border: 1px solid #e0e0e0;
+}
+.suggest-card:hover {
+    background: #e3f2fd;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* 채팅 말풍선 */
+.msg-user {
+    text-align: right;
+    margin: 16px 0 8px 0;
+}
+.msg-ai {
+    text-align: left;
+    margin: 16px 0 8px 0;
+}
+.msg-bubble {
+    display: inline-block;
+    padding: 14px 20px;
+    border-radius: 18px;
+    max-width: 80%;
+    font-size: 1.08em;
+    word-break: break-word;
+}
+.msg-user .msg-bubble {
+    background: #1976d2;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+.msg-ai .msg-bubble {
+    background: #f0f4f8;
+    color: #222;
+    border-bottom-left-radius: 4px;
+}
+
+/* SQL/결과 표 스타일 */
+.sql-block {
+    background: #f4f4f4;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+    font-family: monospace;
+    font-size: 0.98em;
+}
+.result-block {
+    background: #e8f5e9;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+    font-family: monospace;
+    font-size: 0.98em;
+}
+.result-block table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+    margin-top: 8px;
+}
+.result-block th, .result-block td {
+    border: 1px solid #cfd8dc;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 1em;
+}
+.result-block th {
+    background: #f0f4f8;
+    font-weight: bold;
+}
+.result-block tr:nth-child(even) {
+    background: #f7f8fa;
+}
+
+.prompt-label { font-weight: bold; margin-top: 10px; display: block; }
+hr { border: none; border-top: 1px solid #e0e0e0; margin: 10px 0; }
+
+/* 위에 추가된 스타일이 전체를 대체합니다. */
+.msg-bubble pre {
+    white-space: pre-wrap;
+    word-break: break-word; /* 긴 텍스트 줄바꿈 */
+}
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.chat-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-header .prompt-label {
+    margin-top: 0;
+    margin-right: 10px;
+}
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0 20px;
+}
+.chat-input-area {
+    padding: 15px 20px;
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+}
+.chat-input-area form {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end; /* 버튼과 textarea 하단 정렬 */
+    background: #f0f4f8;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
+    padding: 8px;
+}
+.chat-input-area textarea {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    font-size: 1.05em;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    max-height: 200px;
+    line-height: 1.5;
+}
+.chat-input-area button {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 8px;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-input-area button:hover {
+    background: #1565c0;
+}
+.chat-input-area button::before {
+    content: '↑'; /* 아이콘 대신 텍스트 사용 */
+} 

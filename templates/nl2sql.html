@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>자연어 → SQL 변환/실행</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>DB AI Agent</h1>
+    </div>
+    <div class="menu">
+        <a href="/">홈</a>
+        <a href="/nl2sql">자연어→SQL</a>
+        <a href="/slowquery">슬로우 쿼리</a>
+        <a href="/connect">DB 연결</a>
+        <a href="/openai">OpenAI Key</a>
+    </div>
+    <div class="container">
+        <h2>자연어 → SQL 변환/실행</h2>
+        <form method="post">
+            <label>자연어 질의
+                <input type="text" name="prompt" required placeholder="예: 지난주에 가입한 사용자 목록 보여줘">
+            </label>
+            <input type="submit" value="SQL 생성 및 실행">
+        </form>
+        {% if sql %}
+            <h3>생성된 SQL</h3>
+            <pre>{{ sql }}</pre>
+        {% endif %}
+        {% if result %}
+            <h3>실행 결과</h3>
+            <pre>{{ result }}</pre>
+        {% endif %}
+    </div>
+</body>
+</html> 
