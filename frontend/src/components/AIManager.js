@@ -230,9 +230,12 @@ function AIManager() {
     };
 
     return (
-        <div className="ai-manager-container">
-            <h2>AI 모델 관리</h2>
-            <div className="ai-card-grid">
+        <div className="page-content">
+            <div className="page-header">
+                <h2>AI 모델 관리</h2>
+            </div>
+            <div className="page-body">
+                <div className="ai-card-grid">
                 {/* OpenAI 카드 */}
                 <div className="ai-card">
                     <div className="ai-card-header">OpenAI</div>
@@ -351,6 +354,7 @@ function AIManager() {
                             ))}
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

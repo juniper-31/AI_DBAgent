@@ -122,6 +122,21 @@ def create_tables_if_not_exists():
             );
         """)
 
+        # Create aws_credentials table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS aws_credentials (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(50) NOT NULL,
+                access_key VARCHAR(100) NOT NULL,
+                secret_key VARCHAR(100) NOT NULL,
+                session_token VARCHAR(500),
+                region VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT FALSE
+            );
+        """)
+
         conn.commit()
         print("INFO: Database tables checked/created successfully.")
     except Exception as e:

@@ -1,19 +1,14 @@
-// ChatComponent.js
-// 자연어→SQL, AI 통합 채팅 컴포넌트
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-
 import ReactMarkdown from 'react-markdown';
 
-// 마크다운 표를 HTML 테이블로 렌더링하는 함수
 function renderMarkdownTable(md) {
-  // 마크다운 표만 추출
   const tableMatch = md.match(/\|.*\|/g);
   if (!tableMatch) return null;
   const rows = tableMatch.map(row => row.split('|').slice(1, -1).map(cell => cell.trim()));
   if (rows.length < 2) return null;
   const headers = rows[0];
-  const data = rows.slice(2); // 1: header, 2: separator, 3~: data
+  const data = rows.slice(2);
   return (
     <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
       <thead>
@@ -28,12 +23,10 @@ function renderMarkdownTable(md) {
   );
 }
 
-// 배열/오브젝트를 표로 변환
 function renderAutoTable(data) {
   if (Array.isArray(data)) {
     if (data.length === 0) return null;
     if (typeof data[0] === 'object' && data[0] !== null) {
-      // 오브젝트 배열
       const headers = Object.keys(data[0]);
       return (
         <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
@@ -48,7 +41,6 @@ function renderAutoTable(data) {
         </table>
       );
     } else {
-      // 단순 배열
       return (
         <table className="result-table" style={{ minWidth: 300, fontSize: '1.05em' }}>
           <tbody>
@@ -58,7 +50,6 @@ function renderAutoTable(data) {
       );
     }
   } else if (typeof data === 'object' && data !== null) {
-    // 단일 오브젝트
     const headers = Object.keys(data);
     return (
       <table className="result-table" style={{ minWidth: 300, fontSize: '1.05em' }}>
@@ -78,16 +69,16 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
   const [textareaRows, setTextareaRows] = useState(1);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
-
   const [aiModels, setAiModels] = useState([]);
   const [selectedAiModel, setSelectedAiModel] = useState('');
-  const [dbSchema, setDbSchema] = useState(null); // DB 스키마 정보
-
-  const [conversations, setConversations] = useState([]); // 대화 목록
-  const [currentConversationId, setCurrentConversationId] = useState(null); // 현재 대화 ID
+  const [dbSchema, setDbSchema] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const [conversationSidebarCollapsed, setConversationSidebarCollapsed] = useState(false);
+  const [runningPlaybook, setRunningPlaybook] = useState(null);
+  const [currentPlaybookStep, setCurrentPlaybookStep] = useState(0);
+  const [playbookAutoMode, setPlaybookAutoMode] = useState(false);
 
-  // 추천 질문들 (카드형)
   const suggestedQuestions = [
     {
       title: '성능 분석',
@@ -115,7 +106,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     }
   ];
 
-  // 자동 스크롤
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -124,7 +114,38 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     scrollToBottom();
   }, [messages]);
 
-  // DB 선택 변경 시 대화 목록 불러오기
+  useEffect(() => {
+    const checkForPlaybookExecution = () => {
+      const playbookData = sessionStorage.getItem('runningPlaybook');
+      if (playbookData) {
+        try {
+          const playbook = JSON.parse(playbookData);
+          sessionStorage.removeItem('runningPlaybook');
+          setRunningPlaybook(playbook);
+          setCurrentPlaybookStep(0);
+          setPlaybookAutoMode(true); // 플레이북 실행 시 자동 모드로 설정
+          if (playbook.selectedDb && playbook.selectedDb !== selectedDb) {
+            onDbChange(playbook.selectedDb);
+          }
+          const welcomeMessage = {
+            role: 'assistant',
+            content: `🚀 **플레이북 "${playbook.name}" 실행을 시작합니다**\n\n📋 **설명:** ${playbook.description}\n\n📊 **총 ${playbook.steps.length}단계**로 구성되어 있습니다.`,
+            timestamp: new Date().toLocaleTimeString(),
+            isPlaybookMessage: true
+          };
+          setMessages([welcomeMessage]);
+          setTimeout(() => {
+            executePlaybookStep(playbook, 0);
+          }, 1000);
+        } catch (error) {
+          console.error('플레이북 데이터 파싱 오류:', error);
+          sessionStorage.removeItem('runningPlaybook');
+        }
+      }
+    };
+    checkForPlaybookExecution();
+  }, []);
+
   useEffect(() => {
     const fetchConversations = async () => {
       if (selectedDb) {
@@ -134,10 +155,8 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
             const conversations = response.data.conversations;
             setConversations(conversations);
             if (conversations.length > 0) {
-              // 가장 최근 대화를 자동으로 선택
               setCurrentConversationId(conversations[0].id);
             } else {
-              // 대화가 없으면 현재 대화 초기화
               setCurrentConversationId(null);
               setMessages([]);
             }
@@ -152,11 +171,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         setMessages([]);
       }
     };
-
     fetchConversations();
   }, [selectedDb]);
 
-  // DB 선택 변경 시 스키마 정보 불러오기
   useEffect(() => {
     const fetchDbSchema = async () => {
       if (selectedDb && selectedDb !== '__ALL_DBS__') {
@@ -164,7 +181,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           const response = await axios.get(`/api/schema/${selectedDb}`);
           if (response.data.status === 'success') {
             setDbSchema(response.data.schema);
-            console.log('DB 스키마 정보 로드 완료:', response.data.schema);
           }
         } catch (error) {
           console.error('DB 스키마 정보를 불러오는데 실패했습니다:', error);
@@ -174,18 +190,15 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         setDbSchema(null);
       }
     };
-
     fetchDbSchema();
   }, [selectedDb]);
 
-  // 현재 대화 ID 변경 시 메시지 불러오기
   useEffect(() => {
     const fetchMessages = async () => {
       if (currentConversationId) {
         try {
           const response = await axios.get(`/api/conversations/${currentConversationId}/messages`);
           if (response.data.status === 'success') {
-            // DB에서 불러온 메시지 형식 변환
             const formattedMessages = response.data.messages.map(msg => ({
               role: msg.role,
               content: msg.content,
@@ -206,7 +219,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     fetchMessages();
   }, [currentConversationId]);
 
-  // AI 모델 목록 불러오기 (한 번만 실행)
   useEffect(() => {
     const fetchAiModels = async () => {
       try {
@@ -214,7 +226,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         const azureOpenAIRes = await axios.get('/api/azure-openai/configs');
         const geminiRes = await axios.get('/api/gemini/configs');
         const claudeRes = await axios.get('/api/claude/configs');
-
         const allModels = [
           ...openaiRes.data.keys.map(k => ({ ...k, type: 'openai' })),
           ...azureOpenAIRes.data.configs.map(c => ({ ...c, type: 'azure_openai' })),
@@ -222,7 +233,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           ...claudeRes.data.configs.map(c => ({ ...c, type: 'claude' })),
         ];
         setAiModels(allModels);
-
         const currentSelected = allModels.find(m => m.is_selected);
         if (currentSelected) {
           setSelectedAiModel(currentSelected.name);
@@ -233,21 +243,18 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           else if (defaultModel.type === 'azure_openai') selectApiEndpoint = '/api/azure-openai/select';
           else if (defaultModel.type === 'gemini') selectApiEndpoint = '/api/gemini/select';
           else if (defaultModel.type === 'claude') selectApiEndpoint = '/api/claude/select';
-
           if (selectApiEndpoint) {
             const formData = new FormData();
             formData.append('name', defaultModel.name);
             axios.post(selectApiEndpoint, formData)
               .then(() => {
                 setSelectedAiModel(defaultModel.name);
-                console.log(`Default AI model selected: ${defaultModel.name}`);
               })
               .catch(error => {
                 console.error('Error selecting default AI model:', error);
               });
           }
         }
-
       } catch (error) {
         console.error('Error fetching AI models:', error);
       }
@@ -255,96 +262,51 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     fetchAiModels();
   }, []);
 
-  // 텍스트 영역 자동 크기 조정
   const autoResizeTextarea = (el) => {
     el.style.height = 'auto';
-    const newHeight = Math.min(el.scrollHeight, 120); // 최대 5줄
+    const newHeight = Math.min(el.scrollHeight, 120);
     el.style.height = newHeight + 'px';
     setTextareaRows(Math.ceil(newHeight / 24));
   };
 
-  // 추천 질문 클릭
   const handleSuggestedQuestion = (question) => {
     setInput(question);
     textareaRef.current?.focus();
   };
 
-  // DB 스키마 정보를 AI 프롬프트로 변환
   const generateSchemaPrompt = (schema) => {
-    let prompt = '';
-    
-    // 테이블 정보
-    prompt += `데이터베이스에 ${schema.tables.length}개의 테이블이 있습니다:\n\n`;
-    
+    let prompt = `데이터베이스에 ${schema.tables.length}개의 테이블이 있습니다:\n\n`;
     schema.tables.forEach(table => {
       prompt += `테이블: ${table.name}`;
       if (table.comment) {
         prompt += ` (${table.comment})`;
       }
-      prompt += '\n';
-      
-      // 컬럼 정보
-      prompt += '  컬럼:\n';
+      prompt += '\n  컬럼:\n';
       table.columns.forEach(column => {
         prompt += `    - ${column.name}: ${column.type}`;
         if (column.max_length) {
           prompt += `(${column.max_length})`;
         }
-        if (column.precision && column.scale) {
-          prompt += `(${column.precision},${column.scale})`;
-        }
         if (!column.nullable) {
           prompt += ' (NOT NULL)';
-        }
-        if (column.default) {
-          prompt += ` (기본값: ${column.default})`;
         }
         if (column.comment) {
           prompt += ` - ${column.comment}`;
         }
         prompt += '\n';
       });
-      
-      // 인덱스 정보
-      if (table.indexes && table.indexes.length > 0) {
-        prompt += '  인덱스:\n';
-        table.indexes.forEach(index => {
-          prompt += `    - ${index.name}: [${index.columns.join(', ')}]`;
-          if (index.unique) {
-            prompt += ' (UNIQUE)';
-          }
-          if (index.primary) {
-            prompt += ' (PRIMARY KEY)';
-          }
-          prompt += '\n';
-        });
-      }
       prompt += '\n';
     });
-    
-    // 관계 정보
-    if (schema.relationships && schema.relationships.length > 0) {
-      prompt += '테이블 관계:\n';
-      schema.relationships.forEach(rel => {
-        prompt += `  ${rel.table}.${rel.column} -> ${rel.foreign_table}.${rel.foreign_column}\n`;
-      });
-      prompt += '\n';
-    }
-    
     return prompt;
-  };
-
-  // 기존 대화 선택
-  const handleSelectConversation = (convId) => {
+  }; 
+ const handleSelectConversation = (convId) => {
     setCurrentConversationId(convId);
   };
 
-  // 대화 삭제
   const handleDeleteConversation = async (convId) => {
-    if (window.confirm('정말로 이 대화를 삭제하시겠습니까? 모든 메시지가 영구적으로 삭제됩니다.')) {
+    if (window.confirm('정말로 이 대화를 삭제하시겠습니까?')) {
       try {
         await axios.delete(`/api/conversations/${convId}`);
-        // 대화 목록 새로고침
         const convRes = await axios.get(`/api/conversations?db_name=${selectedDb}`);
         if (convRes.data.status === 'success') {
           setConversations(convRes.data.conversations);
@@ -360,7 +322,153 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     }
   };
 
-  // (원복) splitQueries 및 handleSend 함수 제거, 기존 단일 쿼리 처리 방식으로 복구
+  const executePlaybookStep = async (playbook, stepIndex) => {
+    if (!playbook || !playbook.steps || stepIndex >= playbook.steps.length) {
+      return;
+    }
+    const step = playbook.steps[stepIndex];
+    const stepStartMessage = {
+      role: 'assistant',
+      content: `📋 **단계 ${stepIndex + 1}/${playbook.steps.length}: ${step.title}**\n\n🔍 실행 중...`,
+      timestamp: new Date().toLocaleTimeString(),
+      isPlaybookStep: true
+    };
+    setMessages(prev => [...prev, stepStartMessage]);
+    setLoading(true);
+    try {
+      let conversationId = currentConversationId;
+      
+      // 플레이북 전용 대화 찾기 또는 생성
+      if (!conversationId || stepIndex === 0) {
+        // 기존 플레이북 대화 찾기
+        const existingPlaybookConv = conversations.find(conv => 
+          conv.title.includes(`플레이북: ${playbook.name}`) || 
+          conv.title.includes('플레이북:')
+        );
+        
+        if (existingPlaybookConv && stepIndex === 0) {
+          // 기존 플레이북 대화가 있고 첫 번째 단계라면 해당 대화 초기화
+          conversationId = existingPlaybookConv.id;
+          setCurrentConversationId(conversationId);
+          
+          // 기존 대화 내용 초기화
+          const resetFormData = new FormData();
+          resetFormData.append('conversation_id', conversationId);
+          await axios.post('/api/nl2sql/reset', resetFormData);
+        } else if (existingPlaybookConv) {
+          // 기존 플레이북 대화 재사용
+          conversationId = existingPlaybookConv.id;
+          setCurrentConversationId(conversationId);
+        } else {
+          // 새 플레이북 대화 생성
+          const newConvResponse = await axios.post('/api/conversations/new', new URLSearchParams({
+            db_name: playbook.selectedDb,
+            title: `플레이북: ${playbook.name}`
+          }));
+          if (newConvResponse.data.status === 'success') {
+            conversationId = newConvResponse.data.conversation_id;
+            setCurrentConversationId(conversationId);
+            
+            // 대화 목록 새로고침
+            const convRes = await axios.get(`/api/conversations?db_name=${playbook.selectedDb}`);
+            if (convRes.data.status === 'success') {
+              setConversations(convRes.data.conversations);
+            }
+          }
+        }
+      }
+      const formData = new FormData();
+      formData.append('db_name', playbook.selectedDb);
+      let enhancedPrompt = step.prompt;
+      if (dbSchema && dbSchema.tables && dbSchema.tables.length > 0) {
+        const schemaInfo = generateSchemaPrompt(dbSchema);
+        enhancedPrompt = `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[플레이북 단계 실행]\n단계: ${step.title}\n요청: ${step.prompt}`;
+      }
+      formData.append('prompt', enhancedPrompt);
+      formData.append('conversation_id', conversationId);
+      const response = await axios.post('/api/nl2sql', formData);
+      if (response.data.status === 'success') {
+        const data = response.data.message;
+        const stepResultMessage = {
+          role: 'assistant',
+          content: `✅ **단계 ${stepIndex + 1} 완료: ${step.title}**\n\n${data.content || ''}`,
+          sql: data.sql || '',
+          result: data.result || null,
+          timestamp: new Date().toLocaleTimeString(),
+          isPlaybookStep: true
+        };
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = stepResultMessage;
+          return newMessages;
+        });
+        const nextStepIndex = stepIndex + 1;
+        
+        if (nextStepIndex < playbook.steps.length) {
+          // 자동 모드 상태를 직접 확인하여 클로저 문제 해결
+          setPlaybookAutoMode(currentAutoMode => {
+            if (currentAutoMode) {
+              setTimeout(() => {
+                setCurrentPlaybookStep(nextStepIndex);
+                executePlaybookStep(playbook, nextStepIndex);
+              }, 3000);
+            } else {
+              setCurrentPlaybookStep(nextStepIndex);
+              const nextStepPrompt = {
+                role: 'assistant',
+                content: `⏭️ **다음 단계 준비됨**\n\n**단계 ${nextStepIndex + 1}: ${playbook.steps[nextStepIndex].title}**`,
+                timestamp: new Date().toLocaleTimeString(),
+                isPlaybookControl: true,
+                nextStepIndex: nextStepIndex
+              };
+              setMessages(prev => [...prev, nextStepPrompt]);
+            }
+            return currentAutoMode; // 상태 변경 없이 현재 값 유지
+          });
+        } else {
+          setCurrentPlaybookStep(playbook.steps.length); // 모든 단계 완료
+          const completionMessage = {
+            role: 'assistant',
+            content: `🎉 **플레이북 "${playbook.name}" 실행 완료!**`,
+            timestamp: new Date().toLocaleTimeString(),
+            isPlaybookComplete: true
+          };
+          setMessages(prev => [...prev, completionMessage]);
+          setRunningPlaybook(null);
+          setCurrentPlaybookStep(0);
+        }
+      }
+    } catch (error) {
+      console.error('플레이북 단계 실행 오류:', error);
+    } finally {
+      setLoading(false);
+    }
+  }; 
+ const handleNextPlaybookStep = (stepIndex) => {
+    if (runningPlaybook) {
+      executePlaybookStep(runningPlaybook, stepIndex);
+    }
+  };
+
+  const togglePlaybookAutoMode = () => {
+    setPlaybookAutoMode(!playbookAutoMode);
+  };
+
+  const stopPlaybook = () => {
+    if (window.confirm('플레이북 실행을 중단하시겠습니까?')) {
+      setRunningPlaybook(null);
+      setCurrentPlaybookStep(0);
+      setPlaybookAutoMode(false);
+      const stopMessage = {
+        role: 'assistant',
+        content: `⏹️ **플레이북 실행이 중단되었습니다.**`,
+        timestamp: new Date().toLocaleTimeString(),
+        isPlaybookStop: true
+      };
+      setMessages(prev => [...prev, stopMessage]);
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !selectedDb) return;
     if (!selectedAiModel) {
@@ -368,7 +476,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
       return;
     }
     let conversationId = currentConversationId;
-    // 현재 대화가 없으면 새로 생성
     if (!conversationId) {
       try {
         const newConvResponse = await axios.post('/api/conversations/new', new URLSearchParams({
@@ -378,17 +485,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         if (newConvResponse.data.status === 'success') {
           conversationId = newConvResponse.data.conversation_id;
           setCurrentConversationId(conversationId);
-          // 대화 목록 새로고침
-          const convRes = await axios.get(`/api/conversations?db_name=${selectedDb}`);
-          if (convRes.data.status === 'success') {
-            setConversations(convRes.data.conversations);
-          }
-        } else {
-          throw new Error('Failed to create new conversation');
         }
       } catch (error) {
         console.error('새 대화 생성 실패:', error);
-        alert('새 대화를 생성하는데 실패했습니다.');
         return;
       }
     }
@@ -407,7 +506,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     try {
       const formData = new FormData();
       formData.append('db_name', selectedDb);
-      // DB 스키마 정보를 포함한 향상된 프롬프트 생성
       let enhancedPrompt = input;
       if (dbSchema && dbSchema.tables && dbSchema.tables.length > 0) {
         const schemaInfo = generateSchemaPrompt(dbSchema);
@@ -448,7 +546,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     }
   };
 
-  // 키보드 이벤트 처리
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -456,29 +553,20 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     }
   };
 
-  // 텍스트 영역 입력 처리
   const handleInputChange = (e) => {
     setInput(e.target.value);
     autoResizeTextarea(e.target);
   };
 
-  // 채팅 초기화 (현재 대화의 메시지만 삭제)
   const handleResetChat = async () => {
     if (!currentConversationId) return;
-    
     if (window.confirm('현재 대화의 모든 메시지를 초기화하시겠습니까?')) {
       try {
         const formData = new FormData();
         formData.append('conversation_id', currentConversationId);
         const response = await axios.post('/api/nl2sql/reset', formData);
-        
         if (response.data.status === 'success') {
           setMessages([]);
-          // 대화 목록 새로고침 (업데이트된 updated_at 반영)
-          const convRes = await axios.get(`/api/conversations?db_name=${selectedDb}`);
-          if (convRes.data.status === 'success') {
-            setConversations(convRes.data.conversations);
-          }
         }
       } catch (error) {
         console.error('채팅 초기화 오류:', error);
@@ -489,7 +577,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
 
   return (
     <div className="chat-page-container">
-      {/* 대화 목록 사이드바 */}
       <div className={`conversation-sidebar${conversationSidebarCollapsed ? ' collapsed' : ''}`}> 
         <div className="sidebar-header">
           <h3>💬 대화 목록</h3>
@@ -541,7 +628,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
       </div>
 
       <div className="chat-container">
-        {/* 채팅 헤더 */}
         <div className="chat-header">
           <div className="header-left">
             <div className="db-selector">
@@ -561,7 +647,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               </select>
             </div>
             
-            {/* AI 모델 선택 드롭다운 */}
             <div className="ai-model-selector ms-3">
               <label htmlFor="ai-model-select" className="prompt-label">AI 모델 선택</label>
               <select 
@@ -576,7 +661,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                     else if (selected.type === 'azure_openai') selectApiEndpoint = '/api/azure-openai/select';
                     else if (selected.type === 'gemini') selectApiEndpoint = '/api/gemini/select';
                     else if (selected.type === 'claude') selectApiEndpoint = '/api/claude/select';
-
                     if (selectApiEndpoint) {
                       try {
                         const formData = new FormData();
@@ -600,7 +684,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                 ))}
               </select>
             </div>
-
           </div>
           
           <div className="header-actions">
@@ -624,12 +707,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               ➕ 새 대화
             </button>
           </div>
-        </div>
-
-        {/* 채팅 메시지 영역 */}
-        <div className="chat-messages" id="chat-messages">
+        </div> 
+       <div className="chat-messages" id="chat-messages">
           <div className="chat-box">
-            {/* 추천 질문 카드들 (첫 대화 전만 표시) */}
             {messages.length === 0 && !currentConversationId && (
               <div className="suggest-section">
                 <h3>💡 추천 질문</h3>
@@ -654,7 +734,32 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               </div>
             )}
 
-            {/* 메시지들 */}
+            {runningPlaybook && (
+              <div className="playbook-control-panel">
+                <div className="playbook-header">
+                  <h4>🚀 플레이북 실행 중: {runningPlaybook.name}</h4>
+                  <div className="playbook-progress">
+                    진행률: {currentPlaybookStep + 1}/{runningPlaybook.steps.length} 
+                    ({Math.round(((currentPlaybookStep + 1) / runningPlaybook.steps.length) * 100)}%)
+                  </div>
+                </div>
+                <div className="playbook-controls">
+                  <button 
+                    onClick={togglePlaybookAutoMode}
+                    className={`btn ${playbookAutoMode ? 'btn-warning' : 'btn-success'} btn-sm`}
+                  >
+                    {playbookAutoMode ? '⏸️ 수동 모드' : '▶️ 자동 모드'}
+                  </button>
+                  <button 
+                    onClick={stopPlaybook}
+                    className="btn btn-danger btn-sm"
+                  >
+                    ⏹️ 중단
+                  </button>
+                </div>
+              </div>
+            )}
+
             {messages.map((msg, idx) => (
               <div key={idx} className={`message ${msg.role === 'user' ? 'message-user' : 'message-ai'}`}>
                 <div className="message-content">
@@ -675,6 +780,19 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
                           </div>
                         )}
+                        
+                        {msg.isPlaybookControl && (
+                          <div className="playbook-step-controls">
+                            <button
+                              onClick={() => handleNextPlaybookStep(msg.nextStepIndex)}
+                              className="btn btn-primary"
+                              disabled={loading}
+                            >
+                              ▶️ 다음 단계 실행
+                            </button>
+                          </div>
+                        )}
+                        
                         {msg.sql && (
                           <div className="sql-section">
                             <div className="section-header">
@@ -690,7 +808,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                               <strong>📊 쿼리 결과</strong>
                             </div>
                             <div className="result-table-container" style={{ maxWidth: '100%', overflowX: 'auto', minWidth: 600 }}>
-                              {/* headers/data 구조면 표로, 아니면 기존 방식 */}
                               {msg.result.headers && msg.result.data ? (
                                 msg.result.data.length > 0 ? (
                                   <table className="result-table" style={{ minWidth: 600, fontSize: '1.05em' }}>
@@ -715,11 +832,8 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                                   <div style={{ color: '#888', padding: '16px' }}>데이터 없음</div>
                                 )
                               ) : (
-                                // 마크다운 표 자동 변환
                                 (typeof msg.result === 'string' && renderMarkdownTable(msg.result)) ||
-                                // 배열/오브젝트 자동 변환
                                 renderAutoTable(msg.result) ||
-                                // 기존 방식 fallback
                                 <pre style={{ fontSize: '1.05em', background: '#f8f8f8', padding: 12, borderRadius: 6, overflowX: 'auto' }}>{typeof msg.result === 'object' ? JSON.stringify(msg.result, null, 2) : String(msg.result)}</pre>
                               )}
                             </div>
@@ -740,7 +854,6 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               </div>
             ))}
 
-            {/* 로딩 인디케이터 */}
             {loading && (
               <div className="message message-ai">
                 <div className="message-content">
@@ -760,10 +873,8 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
 
             <div ref={messagesEndRef} />
           </div>
-        </div>
-
-        {/* 입력 영역 */}
-        <div className="chat-input-area">
+        </div>   
+     <div className="chat-input-area">
           <div className="input-container">
             <textarea
               ref={textareaRef}

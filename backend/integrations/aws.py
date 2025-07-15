@@ -248,6 +248,28 @@ class AWSIntegration:
 
     def download_rds_log_file(self, db: Session, db_identifier: str, log_file_name: str, max_bytes: int = 1048576) -> str:
         """RDS 인스턴스의 로그 파일 일부 다운로드 (최대 1MB, 필요시 반복 호출)"""
+        session = self.get_boto3_session(db)
+        rds = session.client('rds')
+        marker = '0'
+        content = ''
+        try:
+            while True:
+                response = rds.download_db_log_file_portion(
+                    DBInstanceIdentifier=db_identifier,
+                    LogFileName=log_file_name,
+                    Marker=marker,
+                    NumberOfLines=1000
+                )
+                content += response.get('LogFileData', '')
+                if not response.get('AdditionalDataPending'):
+                    break
+                marker = response.get('Marker')
+                if len(content) > max_bytes:
+                    break
+            return content
+        except Exception as e:
+            print(f"Error downloading RDS log file: {e}")
+            return ''
 
     def get_boto3_session_from_connection(self, conn) -> boto3.Session:
         """PostgreSQL 연결을 통해 AWS 세션 생성 (임시 방법)"""
@@ -280,28 +302,6 @@ class AWSIntegration:
             
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AWS 세션 생성 실패: {str(e)}")
-        session = self.get_boto3_session(db)
-        rds = session.client('rds')
-        marker = '0'
-        content = ''
-        try:
-            while True:
-                response = rds.download_db_log_file_portion(
-                    DBInstanceIdentifier=db_identifier,
-                    LogFileName=log_file_name,
-                    Marker=marker,
-                    NumberOfLines=1000
-                )
-                content += response.get('LogFileData', '')
-                if not response.get('AdditionalDataPending'):
-                    break
-                marker = response.get('Marker')
-                if len(content) > max_bytes:
-                    break
-            return content
-        except Exception as e:
-            print(f"Error downloading RDS log file: {e}")
-            return ''
 
 aws_integration = AWSIntegration()
  

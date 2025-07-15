@@ -329,23 +329,29 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
   };
 
   return (
-    <div className="database-manager">
+    <div className="page-content">
       {/* 헤더 */}
-      <div className="manager-header">
-        <h2>데이터베이스 연결 관리</h2>
-        <button 
-          onClick={toggleForm} 
-          className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`}
-        >
-          {showForm ? '취소' : '새 DB 추가'}
-        </button>
-        <button 
-          onClick={toggleBrowseForm} 
-          className={`btn ${showBrowseForm ? 'btn-secondary' : 'btn-info'}`}
-        >
-          {showBrowseForm ? '취소' : 'DB 목록 조회'}
-        </button>
+      <div className="page-header">
+        <div className="manager-header">
+          <h2>데이터베이스 연결 관리</h2>
+          <div className="button-group">
+            <button 
+              onClick={toggleForm} 
+              className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`}
+            >
+              {showForm ? '취소' : '새 DB 추가'}
+            </button>
+            <button 
+              onClick={toggleBrowseForm} 
+              className={`btn ${showBrowseForm ? 'btn-secondary' : 'btn-info'}`}
+            >
+              {showBrowseForm ? '취소' : 'DB 목록 조회'}
+            </button>
+          </div>
+        </div>
       </div>
+
+      <div className="page-body">
 
       {/* DB 추가/편집 폼 */}
       {showForm && (
@@ -641,6 +647,7 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
             <p>새 DB 연결을 추가해보세요!</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

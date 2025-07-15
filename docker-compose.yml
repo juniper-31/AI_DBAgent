@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스 (메타데이터 저장용)
+  postgres:
+    image: postgres:15
+    container_name: ai-dbagent-postgres
+    environment:
+      POSTGRES_DB: dbagent
+      POSTGRES_USER: dbagentuser
+      POSTGRES_PASSWORD: supersecret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - dbagent-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbagentuser -d dbagent"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # AI DBAgent 애플리케이션
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ai-dbagent-app
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=dbagentuser
+      - DB_PASSWORD=supersecret
+      - DB_NAME=dbagent
+      - AWS_DEFAULT_REGION=ap-northeast-2
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dbagent-network
+    volumes:
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    restart: unless-stopped
+
+  # Redis (캐싱 및 세션 저장용, 선택사항)
+  redis:
+    image: redis:7-alpine
+    container_name: ai-dbagent-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - dbagent-network
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dbagent-network:
+    driver: bridge

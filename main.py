@@ -1,7 +1,7 @@
 import os
 import openai
 from fastapi import FastAPI, Request, Form, Depends, Body
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import re
@@ -364,6 +364,33 @@ def get_playbooks():
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return []
+
+# Health check and system info endpoints
+@app.get("/health")
+def health_check():
+    """헬스체크 엔드포인트"""
+    return {"status": "healthy", "timestamp": datetime.datetime.now().isoformat()}
+
+@app.get("/api/system/info")
+def system_info():
+    """시스템 정보 조회"""
+    import platform
+    import psutil
+    
+    return {
+        "system": {
+            "platform": platform.platform(),
+            "python_version": platform.python_version(),
+            "cpu_count": psutil.cpu_count(),
+            "memory_total": psutil.virtual_memory().total,
+            "memory_available": psutil.virtual_memory().available
+        },
+        "application": {
+            "name": "AI DBAgent",
+            "version": "1.0.0",
+            "agent_running": agent_instance is not None and agent_thread is not None
+        }
+    }
 
 # JSON API Endpoints (for React app)
 @app.get("/api/databases")
