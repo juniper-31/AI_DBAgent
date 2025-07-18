@@ -257,3 +257,16 @@ temp/
 backend.log
 frontend/build/
 static/uploads/
+
+# MCP 설정 파일들 (민감정보 포함)
+config/mcp.json
+.kiro/settings/mcp.json
+mcp.json
+settings/mcp.json
+.config/mcp.json
+mcp/mcp.json
+
+# 환경변수 파일들
+.env.local
+.env.production
+.env.docker

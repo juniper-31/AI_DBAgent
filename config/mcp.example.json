@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "postgres_example": {
+      "command": "uvx",
+      "args": ["mcp-server-postgres@latest"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/dbname"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "query",
+        "list_tables",
+        "describe_table",
+        "get_schema"
+      ]
+    },
+    "cloudwatch_logs_example": {
+      "command": "python3",
+      "args": ["scripts/aws_cloudwatch_mcp_server.py"],
+      "env": {
+        "AWS_DEFAULT_REGION": "ap-northeast-2",
+        "AWS_ACCESS_KEY_ID": "your_access_key",
+        "AWS_SECRET_ACCESS_KEY": "your_secret_key",
+        "RDS_INSTANCE_ID": "your-rds-instance-id"
+      },
+      "disabled": true,
+      "autoApprove": [
+        "list_log_groups",
+        "get_slow_logs",
+        "get_error_logs",
+        "search_logs"
+      ]
+    }
+  }
+}

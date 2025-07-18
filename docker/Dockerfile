@@ -10,7 +10,12 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
+
+# uv 설치 (MCP 서버 실행용)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Node.js 설치 (프론트엔드 빌드용)
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \

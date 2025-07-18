@@ -339,6 +339,21 @@ def add_or_update_database(name, host, port, user, password, dbname, remark=None
             (name, host, int(port), user, password, dbname, remark, cloudwatch_id)
         )
         conn.commit()
+        
+        # MCP에 데이터베이스 자동 등록
+        try:
+            from backend.services.mcp_manager import mcp_manager
+            db_info = {
+                'host': host,
+                'port': int(port),
+                'user': user,
+                'password': password,
+                'dbname': dbname
+            }
+            mcp_manager.add_database_to_mcp(name, db_info)
+        except Exception as mcp_error:
+            print(f"WARNING: Failed to add database to MCP: {mcp_error}")
+        
         return True, None
     except Exception as e:
         return False, str(e)
@@ -353,6 +368,14 @@ def delete_database(name):
         cur = conn.cursor()
         cur.execute("DELETE FROM databases WHERE name = %s;", (name,))
         conn.commit()
+        
+        # MCP에서 데이터베이스 자동 제거
+        try:
+            from backend.services.mcp_manager import mcp_manager
+            mcp_manager.remove_database_from_mcp(name)
+        except Exception as mcp_error:
+            print(f"WARNING: Failed to remove database from MCP: {mcp_error}")
+        
         return True, None
     except Exception as e:
         return False, str(e)

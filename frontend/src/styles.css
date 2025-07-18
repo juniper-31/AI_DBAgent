@@ -27,7 +27,7 @@
   flex-direction: column;
 }
 
-/* 대화 목록 사이드바 헤더 */
+/* Conversation sidebar header */
 .sidebar-header {
   display: flex;
   justify-content: space-between;
@@ -51,13 +51,13 @@
   border-radius: 6px;
 }
 
-/* 대화 목록 컨테이너 */
+/* Conversation list container */
 .conversation-list-container {
   flex-grow: 1;
   overflow-y: auto;
 }
 
-/* 빈 대화 목록 상태 */
+/* Empty conversation list state */
 .no-conversations {
   text-align: center;
   padding: 40px 20px;
@@ -110,7 +110,7 @@
 
 .conversation-content {
   flex-grow: 1;
-  min-width: 0; /* 텍스트 오버플로우 방지 */
+  min-width: 0; /* Prevent text overflow */
 }
 
 .conversation-title {
@@ -160,9 +160,9 @@
   margin-top: 10px;
 }
 
-/* ChatComponent의 header-left에 ai-model-selector 간격 조정 */
+/* ChatComponent header-left ai-model-selector spacing adjustment */
 .chat-header .header-left {
-  gap: 15px; /* 기존 20px에서 조정 */
+  gap: 15px; /* Adjusted from 20px */
 }
 
 .ai-model-selector {
@@ -186,7 +186,7 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* ===== 백엔드 스타일 완전 통일 ===== */
+/* Backend styles unified */
 body {
   font-family: 'Segoe UI', 'Malgun Gothic', Arial, sans-serif;
   background: #f7f8fa;
@@ -354,13 +354,13 @@ body {
   height: 100%;
   max-height: 100vh;
   padding: 0;
-  overflow-y: auto; /* 변경: 채팅 모드에서도 스크롤 가능 */
+  overflow-y: auto; /* Changed: Enable scroll in chat mode */
 }
 
 .chat-header {
-  padding: 10px 20px; /* 기존 20px → 10px으로 높이 줄임 */
+  padding: 10px 20px; /* Reduced height from 20px to 10px */
   background: #fff;
-  border-bottom: 1px solid #e0e0e0; /* 변경 */
+  border-bottom: 1px solid #e0e0e0; /* Changed */
   z-index: 3;
 }
 .header-left {
@@ -399,11 +399,11 @@ body {
 }
 .chat-messages {
   flex: 1 1 auto;
-  overflow-y: auto; /* 스크롤은 이 영역에만 */
+  overflow-y: auto; /* Scroll only in this area */
   padding: 20px;
   margin: 0;
   min-height: 180px;
-  max-height: 70vh; /* 명확히 지정: 채팅창만 스크롤 */
+  max-height: 70vh; /* Clearly specified: Only chat area scrolls */
 }
 h1, h2, h3 {
   color: #2d3e50;
@@ -440,7 +440,7 @@ input:focus, select:focus, textarea:focus {
   border-color: #6a82fb;
   box-shadow: 0 0 0 2px rgba(106,130,251,0.13);
 }
-/* 카드형 추천 질문 */
+/* Card-style suggested questions */
 .suggest-cards {
   display: flex;
   flex-wrap: wrap;
@@ -477,7 +477,7 @@ input:focus, select:focus, textarea:focus {
 .suggest-section, .system-status-section {
   margin-bottom: 18px;
 }
-/* 채팅 말풍선 */
+/* Chat bubbles */
 .message-user .message-content {
   display: flex;
   justify-content: flex-end;
@@ -543,7 +543,7 @@ input:focus, select:focus, textarea:focus {
   font-family: 'Fira Code', monospace;
 }
 
-/* 결과 테이블 컨테이너 */
+/* Result table container */
 .result-table-container {
   max-height: 400px;
   overflow-y: auto;
@@ -581,7 +581,7 @@ input:focus, select:focus, textarea:focus {
   background-color: #e3f2fd;
 }
 
-/* 오류 섹션 */
+/* Error section */
 .error-section .alert {
   margin: 0;
   border-radius: 6px;
@@ -594,7 +594,7 @@ input:focus, select:focus, textarea:focus {
   border-left: 4px solid #dc3545;
 }
 
-/* SQL/결과 표 스타일 */
+/* SQL/Result table styles */
 .sql-block {
   background: #f4f4f4;
   border-radius: 4px;
@@ -627,7 +627,7 @@ input:focus, select:focus, textarea:focus {
   background: #f0f4f8;
   font-weight: bold;
 }
-/* 입력 영역 개선 */
+/* Input area improvements */
 .chat-input-area {
   border-top: 1px solid #e0e0e0;
   background-color: #fff;
@@ -697,7 +697,7 @@ input:focus, select:focus, textarea:focus {
   transform: none;
   box-shadow: none;
 }
-/* RDS 클러스터/인스턴스 트리 테이블 스타일 */
+/* RDS cluster/instance tree table styles */
 .db-table {
   width: 100%;
   border-collapse: collapse;
@@ -741,7 +741,7 @@ input:focus, select:focus, textarea:focus {
 .db-table .btn:last-child {
   margin-right: 0;
 }
-/* 로딩 인디케이터 */
+/* Loading indicator */
 .loading-indicator {
   display: flex;
   align-items: center;
@@ -764,7 +764,7 @@ input:focus, select:focus, textarea:focus {
   100% { transform: rotate(360deg); }
 }
 
-/* 헤더 액션 버튼 */
+/* Header action buttons */
 .header-actions {
   display: flex;
   align-items: center;
@@ -783,7 +783,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 결과가 없을 때 */
+/* When no results */
 .no-result {
   padding: 20px;
   text-align: center;
@@ -805,7 +805,7 @@ input:focus, select:focus, textarea:focus {
   overflow-x: auto;
 }
 
-/* DB 스키마 상태 표시 */
+/* DB schema status display */
 .schema-status {
   display: flex;
   flex-direction: column;
@@ -840,7 +840,7 @@ input:focus, select:focus, textarea:focus {
   100% { opacity: 1; }
 }
 
-/* 사이드바 접힘/펼침 */
+/* Sidebar collapse/expand */
 .sidebar {
   width: 260px;
   min-width: 60px;
@@ -935,7 +935,7 @@ input:focus, select:focus, textarea:focus {
   margin: 8px 0 0 0;
   padding-left: 18px;
 }
-/* AWS 통합 가로 2단 레이아웃 */
+/* AWS integration horizontal 2-column layout */
 .aws-integration-flex-row {
   display: flex;
   gap: 32px;
@@ -1040,7 +1040,7 @@ input:focus, select:focus, textarea:focus {
   border: 1.5px solid #e0e0e0;
 }
 
-/* 모달(팝업) 중앙 띄우기 */
+/* Modal popup centering */
 .modal-backdrop {
   position: fixed;
   left: 0; top: 0; width: 100vw; height: 100vh;
@@ -1058,7 +1058,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
 
-/* DB 연결 상태 불(아이콘) */
+/* DB connection status indicator */
 .conn-indicator {
   display: inline-block;
   width: 18px;
@@ -1083,7 +1083,7 @@ input:focus, select:focus, textarea:focus {
   border-color: #ff9800;
 }
 
-/* AI 모델 카드형 UI 스타일 */
+/* AI model card UI styles */
 .ai-card-grid {
   display: flex;
   flex-wrap: wrap;
@@ -1174,7 +1174,7 @@ input:focus, select:focus, textarea:focus {
   margin-left: 12px;
 }
 
-/* CloudWatch 모니터링 개선 스타일 */
+/* CloudWatch monitoring improved styles */
 .metrics-grid.improved, .charts-grid.improved {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1247,8 +1247,7 @@ input:focus, select:focus, textarea:focus {
   padding: 32px 18px 18px 18px;
   max-width: 1100px;
   margin: 0 auto;
-}/*
- 페이지별 레이아웃 개선 */
+}/* Page layout */
 .page-content {
   height: 100%;
   display: flex;
@@ -1269,7 +1268,7 @@ input:focus, select:focus, textarea:focus {
   padding-right: 8px;
 }
 
-/* 스크롤바 스타일링 */
+/* Scrollbar styling */
 .page-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -1288,7 +1287,7 @@ input:focus, select:focus, textarea:focus {
   background: #a8a8a8;
 }
 
-/* 폼 컨테이너 개선 */
+/* Form container improvements */
 .form-container {
   max-width: 800px;
   margin: 0 auto;
@@ -1301,7 +1300,7 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 20px;
 }
 
-/* 카드 레이아웃 개선 */
+/* Card layout improvements */
 .card-container {
   display: flex;
   flex-wrap: wrap;
@@ -1318,7 +1317,7 @@ input:focus, select:focus, textarea:focus {
   padding: 20px;
 }
 
-/* 테이블 컨테이너 개선 */
+/* Table container improvements */
 .table-container {
   background: #fff;
   border-radius: 12px;
@@ -1332,7 +1331,7 @@ input:focus, select:focus, textarea:focus {
   max-height: 60vh;
 }
 
-/* 버튼 그룹 개선 */
+/* Button group improvements */
 .button-group {
   display: flex;
   gap: 10px;
@@ -1344,7 +1343,7 @@ input:focus, select:focus, textarea:focus {
   margin: 0;
 }
 
-/* 반응형 개선 */
+/* Responsive improvements */
 @media (max-width: 768px) {
   .container {
     padding: 16px;
@@ -1371,7 +1370,7 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* 로딩 상태 개선 */
+/* Loading state improvements */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -1385,7 +1384,7 @@ input:focus, select:focus, textarea:focus {
   z-index: 10;
 }
 
-/* 빈 상태 메시지 개선 */
+/* Empty state message improvements */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -1402,7 +1401,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 14px;
 }
 
-/* 알림 메시지 개선 */
+/* Alert message improvements */
 .alert {
   padding: 12px 16px;
   border-radius: 8px;
@@ -1432,8 +1431,7 @@ input:focus, select:focus, textarea:focus {
   background-color: #d1ecf1;
   border-color: #bee5eb;
   color: #0c5460;
-}/* Databa
-seManager 전용 스타일 */
+}/* Styles */
 .manager-header {
   display: flex;
   justify-content: space-between;
@@ -1452,7 +1450,7 @@ seManager 전용 스타일 */
   margin: 0;
 }
 
-/* 폼 스타일 개선 */
+/* Form style improvements */
 .db-form {
   background: #f8f9fa;
   border-radius: 12px;
@@ -1520,7 +1518,7 @@ seManager 전용 스타일 */
   box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
 }
 
-/* 조회된 데이터베이스 목록 스타일 */
+/* Browsed database list styles */
 .browsed-databases-list {
   background: #fff;
   border-radius: 8px;
@@ -1556,7 +1554,7 @@ seManager 전용 스타일 */
   margin-bottom: 0;
 }
 
-/* 데이터베이스 목록 테이블 개선 */
+/* Database list table improvements */
 .database-list {
   margin-top: 24px;
 }
@@ -1595,7 +1593,7 @@ seManager 전용 스타일 */
   border-bottom: none;
 }
 
-/* 연결 상태 인디케이터 개선 */
+/* Connection status indicator improvements */
 .conn-indicator {
   display: inline-block;
   width: 12px;
@@ -1622,7 +1620,7 @@ seManager 전용 스타일 */
   animation: pulse 1.5s infinite;
 }
 
-/* 액션 버튼 그룹 */
+/* Action button group */
 .db-table td:last-child {
   white-space: nowrap;
 }
@@ -1674,8 +1672,7 @@ seManager 전용 스타일 */
   background: #138496;
   border-color: #117a8b;
 }
-/
-* 플레이북 컨트롤 패널 스타일 */
+/* Playbook control panel styles */
 .playbook-control-panel {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -1719,7 +1716,7 @@ seManager 전용 스타일 */
   font-weight: 500;
 }
 
-/* 플레이북 단계 컨트롤 버튼 */
+/* Playbook step control buttons */
 .playbook-step-controls {
   margin-top: 16px;
   padding: 12px;
@@ -1734,7 +1731,7 @@ seManager 전용 스타일 */
   font-weight: 500;
 }
 
-/* 플레이북 메시지 스타일 개선 */
+/* Playbook message style improvements */
 .message .ai-message-card {
   position: relative;
 }
@@ -1749,7 +1746,7 @@ seManager 전용 스타일 */
   font-weight: 600;
 }
 
-/* 플레이북 완료 메시지 */
+/* Playbook completion message */
 .playbook-complete-message {
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
   color: white;
@@ -1759,7 +1756,7 @@ seManager 전용 스타일 */
   box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
 }
 
-/* 플레이북 오류 메시지 */
+/* Playbook error message */
 .playbook-error-message {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
   color: white;
@@ -1768,7 +1765,7 @@ seManager 전용 스타일 */
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
-/* 플레이북 단계 진행 표시 */
+/* Playbook step progress indicator */
 .playbook-step-indicator {
   display: inline-flex;
   align-items: center;
@@ -1782,7 +1779,7 @@ seManager 전용 스타일 */
   margin-bottom: 8px;
 }
 
-/* 반응형 디자인 개선 */
+/* Responsive design improvements */
 @media (max-width: 768px) {
   .playbook-control-panel {
     padding: 12px;
@@ -1801,5 +1798,249 @@ seManager 전용 스타일 */
   
   .playbook-step-controls {
     padding: 8px;
+  }
+}
+/* 
+MCP Status Styles */
+.mcp-status {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.mcp-status.loading {
+  text-align: center;
+  color: #6c757d;
+  padding: 40px;
+}
+
+.mcp-status.error {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+  text-align: center;
+  padding: 20px;
+}
+
+.mcp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.mcp-header h3 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.sync-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.sync-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.sync-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.mcp-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.summary-item {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-item .label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.summary-item .value {
+  font-weight: 600;
+  color: #212529;
+}
+
+.summary-item .value.synced {
+  color: #28a745;
+}
+
+.summary-item .value.out_of_sync {
+  color: #dc3545;
+}
+
+.mcp-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-section {
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.detail-section h4 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.database-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.database-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #007bff;
+}
+
+.database-item .db-name {
+  font-weight: 600;
+  color: #212529;
+  font-size: 1rem;
+}
+
+.database-item .db-info {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
+}
+
+.database-item .mcp-status.enabled {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.database-item .mcp-status.disabled {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.ai-model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-model-info .model-type {
+  background: #007bff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.ai-model-info .model-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.ai-model-info .api-key-status {
+  color: #28a745;
+  font-size: 0.9rem;
+}
+
+.tools-summary {
+  color: #495057;
+}
+
+.tools-summary p {
+  margin: 5px 0;
+}
+
+.no-data, .no-model, .no-tools {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.mcp-recommendations {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.mcp-recommendations h4 {
+  margin: 0 0 10px 0;
+  color: #856404;
+  font-size: 1rem;
+}
+
+.mcp-recommendations ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.mcp-recommendations li {
+  color: #856404;
+  margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mcp-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .mcp-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .mcp-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .sync-button {
+    width: 100%;
   }
 }

@@ -28,13 +28,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: ai-dbagent-app
+    env_file:
+      - .env.docker
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=dbagentuser
-      - DB_PASSWORD=supersecret
-      - DB_NAME=dbagent
-      - AWS_DEFAULT_REGION=ap-northeast-2
+      # 추가 환경 변수 (필요 시)
+      - CONTAINER_NAME=ai-dbagent-app
     ports:
       - "8000:8000"
     depends_on:
@@ -44,8 +42,19 @@ services:
       - dbagent-network
     volumes:
       - ./logs:/app/logs
-      - ./.env:/app/.env
+      # MCP 설정 파일 볼륨 (호스트에서 컨테이너로 마운트)
+      - ./.kiro:/app/.kiro
+      # uv 캐시 볼륨 (MCP 서버 다운로드 캐시)
+      - uv_cache:/app/.uv-cache
+      # 로컬 환경 변수 파일 (선택사항)
+      - ./.env:/app/.env:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Redis (캐싱 및 세션 저장용, 선택사항)
   redis:
@@ -62,6 +71,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uv_cache:
 
 networks:
   dbagent-network:

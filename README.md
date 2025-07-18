@@ -78,6 +78,13 @@ docker-compose up -d
 - **쿼리 실행 및 해석**: SQL 자동 실행 및 결과 분석
 - **대화 히스토리**: 데이터베이스별 대화 내역 관리
 
+### 🔗 MCP (Model Context Protocol) 통합
+- **자동 데이터베이스 등록**: 데이터베이스 등록 시 MCP 서버 자동 설정
+- **실시간 동기화**: 등록된 데이터베이스와 MCP 서버 자동 동기화
+- **PostgreSQL MCP 서버**: 각 데이터베이스별 전용 MCP 서버 생성
+- **AI 채팅 통합**: MCP 컨텍스트를 AI 채팅에 자동 포함
+- **상태 모니터링**: MCP 연동 상태 실시간 확인 및 관리
+
 ### 📋 자동화 플레이북
 - **사전 정의된 시나리오**: GDPR 컴플라이언스, 일일 헬스체크, 주간 리뷰 등
 - **자동 실행 모드**: 단계별 자동 진행 (3초 간격)
@@ -152,7 +159,126 @@ AI: 현재 데이터베이스 상태를 확인해드리겠습니다...
 AI: 실행 시간이 긴 쿼리들을 조회하겠습니다...
 ```
 
-### 5. 플레이북 실행
+### 5. MCP 설정 및 사용
+
+#### MCP 초기 설정
+```bash
+# uv 및 uvx 설치 (MCP 서버 실행에 필요)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 또는 Homebrew 사용 (macOS)
+brew install uv
+```
+
+#### MCP 설정 파일 위치 (우선순위별)
+
+AI DBAgent는 다양한 환경에서 사용할 수 있도록 MCP 설정 파일 위치를 유연하게 지원합니다:
+
+1. **환경변수로 직접 지정** (최우선)
+   ```bash
+   export MCP_CONFIG_PATH="/path/to/your/mcp.json"
+   ```
+
+2. **프로젝트 config 폴더** (권장)
+   ```bash
+   # config/mcp.json 파일 생성
+   cp config/mcp.example.json config/mcp.json
+   # 설정 수정 후 사용
+   ```
+
+3. **Kiro IDE 사용자용**
+   ```bash
+   # .kiro/settings/mcp.json (Kiro IDE 자동 생성)
+   ```
+
+4. **기타 일반적인 위치들**
+   ```
+   mcp/mcp.json
+   settings/mcp.json
+   .config/mcp.json
+   mcp.json (프로젝트 루트)
+   ```
+
+#### MCP 설정 파일 예시
+
+```json
+{
+  "mcpServers": {
+    "postgres_mydb": {
+      "command": "uvx",
+      "args": ["mcp-server-postgres@latest"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@host:5432/db"
+      },
+      "disabled": false,
+      "autoApprove": ["query", "list_tables", "describe_table"]
+    },
+    "cloudwatch_logs_mydb": {
+      "command": "python3",
+      "args": ["scripts/aws_cloudwatch_mcp_server.py"],
+      "env": {
+        "AWS_DEFAULT_REGION": "ap-northeast-2",
+        "RDS_INSTANCE_ID": "my-rds-instance"
+      },
+      "disabled": false,
+      "autoApprove": ["get_slow_logs", "get_error_logs", "search_logs"]
+    }
+  }
+}
+```
+
+#### MCP 기능 사용
+1. **자동 동기화**: 데이터베이스 등록 시 MCP 서버가 자동으로 설정됩니다
+2. **상태 확인**: 대시보드에서 MCP 연동 상태를 실시간으로 확인
+3. **수동 동기화**: 필요 시 "동기화" 버튼으로 수동 동기화 실행
+4. **AI 채팅**: MCP 컨텍스트가 자동으로 AI 채팅에 포함되어 더 정확한 응답 제공
+
+#### MCP 테스트
+```bash
+# MCP 기능 테스트
+python scripts/test_mcp.py
+
+# MCP 동기화 테스트
+python scripts/test_mcp.py sync
+
+# 특정 설정 파일로 테스트
+MCP_CONFIG_PATH="config/mcp.json" python scripts/test_mcp.py
+```
+
+#### 팀 협업을 위한 MCP 설정
+
+**Git에 포함할 파일들:**
+- `config/mcp.example.json` - 예시 설정 (민감정보 제외)
+- `scripts/aws_cloudwatch_mcp_server.py` - CloudWatch MCP 서버
+- `scripts/postgres_mcp_server.py` - PostgreSQL MCP 서버
+
+**Git에서 제외할 파일들 (.gitignore):**
+```gitignore
+# MCP 설정 파일들 (민감정보 포함)
+config/mcp.json
+.kiro/settings/mcp.json
+mcp.json
+
+# AWS 자격증명
+.env
+.env.local
+```
+
+**팀원 설정 가이드:**
+```bash
+# 1. 예시 파일 복사
+cp config/mcp.example.json config/mcp.json
+
+# 2. 개인 설정 수정
+# - 데이터베이스 연결 정보
+# - AWS 자격증명
+# - RDS 인스턴스 ID 등
+
+# 3. 환경변수 설정 (선택사항)
+export MCP_CONFIG_PATH="config/mcp.json"
+```
+
+### 6. 플레이북 실행
 
 1. **플레이북** 메뉴에서 원하는 시나리오 선택
 2. 대상 데이터베이스 선택

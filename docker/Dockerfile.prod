@@ -20,11 +20,17 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 # 비root 사용자 생성
 RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# uv 설치 (MCP 서버 실행용) - 전역 설치
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN mv /root/.local/bin/uv /usr/local/bin/uv && mv /root/.local/bin/uvx /usr/local/bin/uvx
+ENV PATH="/usr/local/bin:$PATH"
 
 # Python 의존성 설치
 COPY requirements.txt .

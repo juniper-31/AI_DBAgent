@@ -82,6 +82,14 @@ async def startup_event():
     print("INFO: FastAPI app startup. Initializing agent...")
     create_tables_if_not_exists()
     
+    # MCP 자동 동기화
+    try:
+        from backend.services.mcp_manager import mcp_manager
+        mcp_manager.sync_all_databases()
+        print("INFO: MCP databases synchronized successfully.")
+    except Exception as e:
+        print(f"WARNING: Failed to sync MCP databases: {e}")
+    
     # Fetch initial DB connections for the agent
     agent_instance = Agent()
     initial_db_connections = get_registered_databases()
@@ -101,6 +109,8 @@ async def shutdown_event():
 # API Routers
 app.include_router(monitoring_router)
 app.include_router(aws_router)
+from backend.api.mcp import router as mcp_router
+app.include_router(mcp_router)
 
 # Slow query log parsing function (PostgreSQL specific implementation needed)
 def parse_slow_query_log(log_path, min_time=1.0):
@@ -133,6 +143,10 @@ async def process_single_prompt(
     Processes a single prompt, including AI calls and SQL execution,
     and returns a message object to be added to the chat history.
     """
+    # MCP 컨텍스트 추가
+    from backend.services.ai_chat_service import ai_chat_service
+    mcp_context = ai_chat_service.format_context_for_prompt()
+    
     target_db_info = None
     schema_for_ai = ""
     system_prompt_base = ""
@@ -191,7 +205,9 @@ async def process_single_prompt(
                     error_feedback = f"이전에 생성된 쿼리에서 오류가 발생했습니다. 오류 내용은 다음과 같습니다: {last_message['result']}. 오류와 사용자 요청을 분석하여 수정된 SQL 쿼리를 생성해주세요."
                 break
 
-    system_prompt_content = system_prompt_base.format(schema=schema_for_ai) + error_feedback
+    # MCP 컨텍스트를 시스템 프롬프트에 추가
+    mcp_context_section = f"\n\n=== MCP 통합 정보 ===\n{mcp_context}\n" if mcp_context else ""
+    system_prompt_content = system_prompt_base.format(schema=schema_for_ai) + mcp_context_section + error_feedback
 
     messages_for_api: List[ChatCompletionMessageParam] = [
         ChatCompletionSystemMessageParam(role="system", content=system_prompt_content)
