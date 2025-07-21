@@ -270,12 +270,23 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      setSuccess('인증 정보가 추가되었습니다!');
+      const result = await res.json();
+      console.log('Add credential result:', result);
+
+      // IAM Role 정보가 있으면 표시
+      if (result.role_info) {
+        setSuccess(`인증 정보가 추가되었습니다! 현재 IAM Role: ${result.role_info.role_name} (${result.role_info.account})`);
+        console.log('IAM Role Info:', result.role_info);
+      } else {
+        setSuccess('인증 정보가 추가되었습니다!');
+      }
+
       setNewAccessKey(''); setNewSecretKey(''); setNewAwsRegion('ap-northeast-2');
       setShowAddForm(false);
       await loadCredentials();
     } else {
-      setError('추가 실패');
+      const errorData = await res.json().catch(() => ({}));
+      setError(`추가 실패: ${errorData.detail || '알 수 없는 오류'}`);
     }
     setLoading(false);
   };

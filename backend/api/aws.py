@@ -289,39 +289,88 @@ async def list_aws_credentials(db: Session = Depends(get_db)):
 
 @router.post('/aws/credentials')
 async def add_aws_credentials(payload: dict = Body(...), db: Session = Depends(get_db)):
+    # 디버깅을 위해 페이로드 출력
+    print(f"Received payload: {payload}")
+    
     # is_active가 true면 기존 것들 모두 false로
     if payload.get('is_active'):
         db.query(AwsCredentials).update({AwsCredentials.is_active: False})
     
     auth_type = payload.get('auth_type', 'access_key')
+    print(f"Auth type: {auth_type}")
     
-    # IAM Role 방식일 때는 access_key, secret_key를 null로 설정
-    if auth_type == 'iam_role':
-        cred = AwsCredentials(
-            name=payload.get('name'),
-            auth_type=auth_type,
-            access_key=None,
-            secret_key=None,
-            session_token=payload.get('session_token'),
-            region=payload.get('region'),
-            is_active=payload.get('is_active', False)
-        )
-    else:
-        # Access Key 방식
-        cred = AwsCredentials(
-            name=payload.get('name'),
-            auth_type=auth_type,
-            access_key=payload.get('access_key'),
-            secret_key=payload.get('secret_key'),
-            session_token=payload.get('session_token'),
-            region=payload.get('region'),
-            is_active=payload.get('is_active', False)
-        )
-    
-    db.add(cred)
-    db.commit()
-    db.refresh(cred)
-    return {'success': True, 'id': cred.id}
+    try:
+        # IAM Role 방식일 때는 access_key, secret_key를 null로 설정
+        if auth_type == 'iam_role':
+            print("Creating IAM Role credential...")
+            cred = AwsCredentials(
+                name=payload.get('name'),
+                auth_type=auth_type,
+                access_key=None,
+                secret_key=None,
+                session_token=payload.get('session_token'),
+                region=payload.get('region'),
+                is_active=payload.get('is_active', False)
+            )
+            
+            # IAM Role 정보 가져오기 시도
+            try:
+                session = boto3.Session(region_name=payload.get('region'))
+                sts = session.client('sts')
+                identity = sts.get_caller_identity()
+                arn = identity.get('Arn', '')
+                role_name = 'Unknown'
+                if 'assumed-role' in arn:
+                    role_name = arn.split('/')[-2] if len(arn.split('/')) >= 2 else 'Unknown'
+                print(f"Current IAM Role: {role_name}")
+                print(f"ARN: {arn}")
+            except Exception as role_error:
+                print(f"Failed to get IAM Role info: {role_error}")
+                
+        else:
+            # Access Key 방식
+            print("Creating Access Key credential...")
+            cred = AwsCredentials(
+                name=payload.get('name'),
+                auth_type=auth_type,
+                access_key=payload.get('access_key'),
+                secret_key=payload.get('secret_key'),
+                session_token=payload.get('session_token'),
+                region=payload.get('region'),
+                is_active=payload.get('is_active', False)
+            )
+        
+        print(f"Saving credential to database...")
+        db.add(cred)
+        db.commit()
+        db.refresh(cred)
+        print(f"Credential saved with ID: {cred.id}")
+        
+        # IAM Role 방식이고 저장 성공했으면 Role 정보도 반환
+        response = {'success': True, 'id': cred.id}
+        if auth_type == 'iam_role':
+            try:
+                session = boto3.Session(region_name=cred.region)
+                sts = session.client('sts')
+                identity = sts.get_caller_identity()
+                arn = identity.get('Arn', '')
+                role_name = 'Unknown'
+                if 'assumed-role' in arn:
+                    role_name = arn.split('/')[-2] if len(arn.split('/')) >= 2 else 'Unknown'
+                response['role_info'] = {
+                    'role_name': role_name,
+                    'arn': arn,
+                    'account': identity.get('Account', ''),
+                    'region': cred.region
+                }
+            except Exception as role_error:
+                print(f"Failed to get role info for response: {role_error}")
+                
+        return response
+        
+    except Exception as e:
+        print(f"Error saving credential: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete('/aws/credentials/{cred_id}')
 async def delete_aws_credentials(cred_id: int, db: Session = Depends(get_db)):
