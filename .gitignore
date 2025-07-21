@@ -269,4 +269,3 @@ mcp/mcp.json
 # 환경변수 파일들
 .env.local
 .env.production
-.env.docker
