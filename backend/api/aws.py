@@ -121,9 +121,23 @@ async def get_current_iam_role():
 @router.get('/aws/rds-instances')
 async def list_rds_instances(db: Session = Depends(get_db)):
     try:
+        print("Starting RDS instances query...")
+        
+        # 활성 인증 정보 확인
+        active_cred = db.query(AwsCredentials).filter(AwsCredentials.is_active == True).first()
+        if active_cred:
+            print(f"Using active credential: ID={active_cred.id}, Type={active_cred.auth_type}, Region={active_cred.region}")
+        else:
+            print("No active credential found!")
+            
         result = aws_integration.list_rds_instances(db)
+        print(f"RDS query successful: {len(result.get('instances', []))} instances, {len(result.get('clusters', []))} clusters")
         return result  # {'instances': [...], 'clusters': [...]}
     except Exception as e:
+        print(f"RDS query failed: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/aws/rds-metrics')
