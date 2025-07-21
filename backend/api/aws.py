@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Form, HTTPException, Body, Depends
 from fastapi.responses import JSONResponse
 from typing import Dict, Any, List
 import json
+import boto3
 from datetime import datetime, timedelta
 from backend.integrations.aws import aws_integration
 from backend.models.database import SessionLocal, AwsCredentials
@@ -19,14 +20,20 @@ def get_db():
 @router.post('/aws/auth/test')
 async def test_aws_credentials(payload: dict = Body(...)):
     try:
-        # This is a temporary test and does not use the stored credentials.
-        import boto3
-        session = boto3.Session(
-            aws_access_key_id=payload.get('accessKey'),
-            aws_secret_access_key=payload.get('secretKey'),
-            aws_session_token=payload.get('sessionToken'),
-            region_name=payload.get('region')
-        )
+        auth_type = payload.get('authType', 'access_key')
+        
+        if auth_type == 'iam_role':
+            # IAM Role 방식 테스트
+            session = boto3.Session(region_name=payload.get('region'))
+        else:
+            # Access Key 방식 테스트
+            session = boto3.Session(
+                aws_access_key_id=payload.get('accessKey'),
+                aws_secret_access_key=payload.get('secretKey'),
+                aws_session_token=payload.get('sessionToken'),
+                region_name=payload.get('region')
+            )
+        
         sts = session.client('sts')
         identity = sts.get_caller_identity()
         return {"success": True, "identity": identity}
@@ -193,7 +200,8 @@ async def list_aws_credentials(db: Session = Depends(get_db)):
         {
             'id': c.id,
             'name': c.name,
-            'access_key': c.access_key,
+            'auth_type': c.auth_type,
+            'access_key': c.access_key if c.auth_type == 'access_key' else None,
             'region': c.region,
             'is_active': c.is_active,
             'created_at': str(c.created_at),
@@ -206,14 +214,32 @@ async def add_aws_credentials(payload: dict = Body(...), db: Session = Depends(g
     # is_active가 true면 기존 것들 모두 false로
     if payload.get('is_active'):
         db.query(AwsCredentials).update({AwsCredentials.is_active: False})
-    cred = AwsCredentials(
-        name=payload.get('name'),
-        access_key=payload.get('access_key'),
-        secret_key=payload.get('secret_key'),
-        session_token=payload.get('session_token'),
-        region=payload.get('region'),
-        is_active=payload.get('is_active', False)
-    )
+    
+    auth_type = payload.get('auth_type', 'access_key')
+    
+    # IAM Role 방식일 때는 access_key, secret_key를 null로 설정
+    if auth_type == 'iam_role':
+        cred = AwsCredentials(
+            name=payload.get('name'),
+            auth_type=auth_type,
+            access_key=None,
+            secret_key=None,
+            session_token=payload.get('session_token'),
+            region=payload.get('region'),
+            is_active=payload.get('is_active', False)
+        )
+    else:
+        # Access Key 방식
+        cred = AwsCredentials(
+            name=payload.get('name'),
+            auth_type=auth_type,
+            access_key=payload.get('access_key'),
+            secret_key=payload.get('secret_key'),
+            session_token=payload.get('session_token'),
+            region=payload.get('region'),
+            is_active=payload.get('is_active', False)
+        )
+    
     db.add(cred)
     db.commit()
     db.refresh(cred)

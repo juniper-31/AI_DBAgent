@@ -26,18 +26,28 @@ class AWSIntegration:
         if not active_cred:
             raise HTTPException(status_code=401, detail="No active AWS credential found. Please configure and activate one.")
 
-        if not active_cred.access_key or not active_cred.secret_key:
-            raise HTTPException(status_code=400, detail="The active AWS credential is incomplete (missing access key or secret key).")
-
-        # For now, we only support access key authentication.
-        # The logic for assume_role etc. can be re-added here if needed.
-        session = boto3.Session(
-            aws_access_key_id=active_cred.access_key,
-            aws_secret_access_key=active_cred.secret_key,
-            aws_session_token=active_cred.session_token,  # This can be None
-            region_name=active_cred.region
-        )
-        return session
+        # IAM Role 방식 지원
+        if active_cred.auth_type == 'iam_role':
+            # EC2/ECS/EKS에서 IAM Role을 사용하는 경우
+            # boto3가 자동으로 메타데이터 서비스에서 임시 자격 증명을 가져옴
+            session = boto3.Session(region_name=active_cred.region)
+            return session
+        
+        # Access Key 방식
+        elif active_cred.auth_type == 'access_key':
+            if not active_cred.access_key or not active_cred.secret_key:
+                raise HTTPException(status_code=400, detail="The active AWS credential is incomplete (missing access key or secret key).")
+            
+            session = boto3.Session(
+                aws_access_key_id=active_cred.access_key,
+                aws_secret_access_key=active_cred.secret_key,
+                aws_session_token=active_cred.session_token,  # This can be None
+                region_name=active_cred.region
+            )
+            return session
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported authentication type: {active_cred.auth_type}")
 
     def list_rds_instances(self, db: Session) -> dict:
         session = self.get_boto3_session(db)

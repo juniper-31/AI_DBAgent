@@ -18,8 +18,9 @@ class AwsCredentials(Base):
     __tablename__ = 'aws_credentials'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
-    access_key = Column(String(100), nullable=False)
-    secret_key = Column(String(100), nullable=False)
+    auth_type = Column(String(20), nullable=False, default='access_key')  # 'access_key' or 'iam_role'
+    access_key = Column(String(100), nullable=True)  # IAM Role일 때는 null 가능
+    secret_key = Column(String(100), nullable=True)  # IAM Role일 때는 null 가능
     session_token = Column(String(500))
     region = Column(String(50))
     created_at = Column(TIMESTAMP, server_default="CURRENT_TIMESTAMP")

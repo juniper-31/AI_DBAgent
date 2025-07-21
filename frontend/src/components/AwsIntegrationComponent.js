@@ -138,11 +138,13 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
     setLoading(true); setError(''); setSuccess('');
     const cred = credentialsList.find(c => c.id === selectedId);
     if (!cred) { setError('선택된 인증정보가 없습니다.'); setLoading(false); return; }
+    
     const payload = {
+      authType: cred.auth_type || 'access_key',
       accessKey: cred.access_key,
       secretKey: secretKey === '********' ? '' : secretKey,
       sessionToken: sessionToken,
-      awsRegion: cred.region
+      region: cred.region
     };
     const res = await fetch('/aws/auth/test', {
       method: 'POST',
@@ -208,13 +210,25 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
   // 인증 정보 추가
   const handleAddCredential = async () => {
     setError(''); setSuccess(''); setLoading(true);
-    const payload = {
-      name: newAccessKey.slice(0, 8) + '...',
-      access_key: newAccessKey,
-      secret_key: newSecretKey,
-      region: newAwsRegion,
-      is_active: false
-    };
+    
+    let payload;
+    if (authType === 'iamRole') {
+      payload = {
+        name: 'IAM Role (' + newAwsRegion + ')',
+        auth_type: 'iam_role',
+        region: newAwsRegion,
+        is_active: false
+      };
+    } else {
+      payload = {
+        name: newAccessKey.slice(0, 8) + '...',
+        auth_type: 'access_key',
+        access_key: newAccessKey,
+        secret_key: newSecretKey,
+        region: newAwsRegion,
+        is_active: false
+      };
+    }
     const res = await fetch('/aws/credentials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -415,7 +429,13 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
               </>
             )}
             <div className="form-actions">
-              <button className="btn btn-primary" onClick={handleAddCredential} disabled={loading || !newAccessKey || !newSecretKey}>{t('awsIntegration.add')}</button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleAddCredential} 
+                disabled={loading || (authType === 'accessKey' && (!newAccessKey || !newSecretKey))}
+              >
+                {t('awsIntegration.add')}
+              </button>
               <button className="btn btn-outline" onClick={() => setShowAddForm(false)}>{t('awsIntegration.cancel')}</button>
             </div>
           </div>
