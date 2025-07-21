@@ -249,6 +249,8 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       payload = {
         name: 'IAM Role (' + newAwsRegion + ')',
         auth_type: 'iam_role',
+        access_key: null,  // 명시적으로 null 설정
+        secret_key: null,  // 명시적으로 null 설정
         region: newAwsRegion,
         is_active: false
       };
