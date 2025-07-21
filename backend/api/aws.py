@@ -274,6 +274,10 @@ async def analyze_rds_log_file_slow_queries(db_identifier: str, log_file_name: s
 @router.get('/aws/credentials')
 async def list_aws_credentials(db: Session = Depends(get_db)):
     creds = db.query(AwsCredentials).all()
+    print(f"Found {len(creds)} credentials in database:")
+    for c in creds:
+        print(f"  ID: {c.id}, Name: {c.name}, Type: {c.auth_type}, Active: {c.is_active}")
+    
     return [
         {
             'id': c.id,
@@ -303,6 +307,9 @@ async def add_aws_credentials(payload: dict = Body(...), db: Session = Depends(g
         # IAM Role 방식일 때는 access_key, secret_key를 null로 설정
         if auth_type == 'iam_role':
             print("Creating IAM Role credential...")
+            # IAM Role은 저장과 동시에 활성화 (기존 것들은 비활성화)
+            db.query(AwsCredentials).update({AwsCredentials.is_active: False})
+            
             cred = AwsCredentials(
                 name=payload.get('name'),
                 auth_type=auth_type,
@@ -310,7 +317,7 @@ async def add_aws_credentials(payload: dict = Body(...), db: Session = Depends(g
                 secret_key=None,
                 session_token=payload.get('session_token'),
                 region=payload.get('region'),
-                is_active=payload.get('is_active', False)
+                is_active=True  # IAM Role은 자동으로 활성화
             )
             
             # IAM Role 정보 가져오기 시도

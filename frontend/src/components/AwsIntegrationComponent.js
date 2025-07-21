@@ -277,6 +277,16 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       if (result.role_info) {
         setSuccess(`인증 정보가 추가되었습니다! 현재 IAM Role: ${result.role_info.role_name} (${result.role_info.account})`);
         console.log('IAM Role Info:', result.role_info);
+
+        // IAM Role이 저장되고 활성화되었으므로 연결 상태 업데이트
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        setAwsRegion(result.role_info.region);
+
+        // RDS 인스턴스 목록 자동 조회
+        setTimeout(() => {
+          fetchRdsInstances();
+        }, 1000);
       } else {
         setSuccess('인증 정보가 추가되었습니다!');
       }
