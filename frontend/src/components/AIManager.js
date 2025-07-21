@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 function AIManager() {
+    const { language } = useLanguage();
+    const { t } = useTranslation(language);
+    
     // 기존 OpenAI 상태
     const [openaiKeys, setOpenaiKeys] = useState([]);
     const [selectedOpenaiKey, setSelectedOpenaiKey] = useState('');
@@ -76,7 +81,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error adding OpenAI key:', error);
-            alert('Failed to add OpenAI key.');
+            alert(t('aiManager.addFailed'));
         }
     };
 
@@ -88,7 +93,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error selecting OpenAI key:', error);
-            alert('Failed to select OpenAI key.');
+            alert(t('aiManager.selectFailed'));
         }
     };
 
@@ -98,7 +103,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error deleting OpenAI key:', error);
-            alert('Failed to delete OpenAI key.');
+            alert(t('aiManager.deleteFailed'));
         }
     };
 
@@ -121,7 +126,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error adding Azure OpenAI config:', error);
-            alert('Failed to add Azure OpenAI config.');
+            alert(t('aiManager.addFailed'));
         }
     };
 
@@ -133,7 +138,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error selecting Azure OpenAI config:', error);
-            alert('Failed to select Azure OpenAI config.');
+            alert(t('aiManager.selectFailed'));
         }
     };
 
@@ -143,7 +148,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error deleting Azure OpenAI config:', error);
-            alert('Failed to delete Azure OpenAI config.');
+            alert(t('aiManager.deleteFailed'));
         }
     };
 
@@ -162,7 +167,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error adding Gemini config:', error);
-            alert('Failed to add Gemini config.');
+            alert(t('aiManager.addFailed'));
         }
     };
 
@@ -174,7 +179,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error selecting Gemini config:', error);
-            alert('Failed to select Gemini config.');
+            alert(t('aiManager.selectFailed'));
         }
     };
 
@@ -184,7 +189,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error deleting Gemini config:', error);
-            alert('Failed to delete Gemini config.');
+            alert(t('aiManager.deleteFailed'));
         }
     };
 
@@ -203,7 +208,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error adding Claude config:', error);
-            alert('Failed to add Claude config.');
+            alert(t('aiManager.addFailed'));
         }
     };
 
@@ -215,7 +220,7 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error selecting Claude config:', error);
-            alert('Failed to select Claude config.');
+            alert(t('aiManager.selectFailed'));
         }
     };
 
@@ -225,14 +230,14 @@ function AIManager() {
             fetchAllConfigs();
         } catch (error) {
             console.error('Error deleting Claude config:', error);
-            alert('Failed to delete Claude config.');
+            alert(t('aiManager.deleteFailed'));
         }
     };
 
     return (
         <div className="page-content">
             <div className="page-header">
-                <h2>AI 모델 관리</h2>
+                <h2>{t('aiManager.title')}</h2>
             </div>
             <div className="page-body">
                 <div className="ai-card-grid">
@@ -244,7 +249,7 @@ function AIManager() {
                             <input
                                 type="text"
                                 className="ai-input"
-                                placeholder="이름"
+                                placeholder={t('aiManager.placeholders.name')}
                                 value={newOpenaiKeyName}
                                 onChange={(e) => setNewOpenaiKeyName(e.target.value)}
                                 required
@@ -252,12 +257,12 @@ function AIManager() {
                             <input
                                 type="text"
                                 className="ai-input"
-                                placeholder="API 키"
+                                placeholder={t('aiManager.placeholders.apiKey')}
                                 value={newOpenaiKeyValue}
                                 onChange={(e) => setNewOpenaiKeyValue(e.target.value)}
                                 required
                             />
-                            <button type="submit" className="btn btn-primary">추가</button>
+                            <button type="submit" className="btn btn-primary">{t('aiManager.add')}</button>
                         </form>
                         <div className="ai-card-list">
                             {openaiKeys.map((key) => (
@@ -267,8 +272,8 @@ function AIManager() {
                                         <div className="ai-card-item-desc">{key.key}</div>
                                     </div>
                                     <div className="ai-card-item-actions">
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectOpenaiKey(key.name)} disabled={selectedOpenaiKey === key.name}>선택</button>
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteOpenaiKey(key.name)}>삭제</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectOpenaiKey(key.name)} disabled={selectedOpenaiKey === key.name}>{t('aiManager.select')}</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteOpenaiKey(key.name)}>{t('aiManager.delete')}</button>
                                     </div>
                                 </div>
                             ))}
@@ -280,12 +285,12 @@ function AIManager() {
                     <div className="ai-card-header">Azure OpenAI</div>
                     <div className="ai-card-body">
                         <form onSubmit={handleAddAzureOpenAIConfig} className="ai-card-form">
-                            <input type="text" className="ai-input" placeholder="이름" value={newAzureOpenAIName} onChange={e => setNewAzureOpenAIName(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="API 키" value={newAzureOpenAIKey} onChange={e => setNewAzureOpenAIKey(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="엔드포인트" value={newAzureOpenAIEndpoint} onChange={e => setNewAzureOpenAIEndpoint(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="배포 이름" value={newAzureOpenAIDeploymentName} onChange={e => setNewAzureOpenAIDeploymentName(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="API 버전" value={newAzureOpenAIApiVersion} onChange={e => setNewAzureOpenAIApiVersion(e.target.value)} required />
-                            <button type="submit" className="btn btn-primary">추가</button>
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.name')} value={newAzureOpenAIName} onChange={e => setNewAzureOpenAIName(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.apiKey')} value={newAzureOpenAIKey} onChange={e => setNewAzureOpenAIKey(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.endpoint')} value={newAzureOpenAIEndpoint} onChange={e => setNewAzureOpenAIEndpoint(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.deploymentName')} value={newAzureOpenAIDeploymentName} onChange={e => setNewAzureOpenAIDeploymentName(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.apiVersion')} value={newAzureOpenAIApiVersion} onChange={e => setNewAzureOpenAIApiVersion(e.target.value)} required />
+                            <button type="submit" className="btn btn-primary">{t('aiManager.add')}</button>
                         </form>
                         <div className="ai-card-list">
                             {azureOpenAIConfigs.map((cfg) => (
@@ -295,8 +300,8 @@ function AIManager() {
                                         <div className="ai-card-item-desc">{cfg.endpoint} / {cfg.deployment_name}</div>
                                     </div>
                                     <div className="ai-card-item-actions">
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectAzureOpenAIConfig(cfg.name)} disabled={selectedAzureOpenAIConfig === cfg.name}>선택</button>
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteAzureOpenAIConfig(cfg.name)}>삭제</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectAzureOpenAIConfig(cfg.name)} disabled={selectedAzureOpenAIConfig === cfg.name}>{t('aiManager.select')}</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteAzureOpenAIConfig(cfg.name)}>{t('aiManager.delete')}</button>
                                     </div>
                                 </div>
                             ))}
@@ -308,10 +313,10 @@ function AIManager() {
                     <div className="ai-card-header">Gemini</div>
                     <div className="ai-card-body">
                         <form onSubmit={handleAddGeminiConfig} className="ai-card-form">
-                            <input type="text" className="ai-input" placeholder="이름" value={newGeminiName} onChange={e => setNewGeminiName(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="API 키" value={newGeminiKey} onChange={e => setNewGeminiKey(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="모델명" value={newGeminiModelName} onChange={e => setNewGeminiModelName(e.target.value)} required />
-                            <button type="submit" className="btn btn-primary">추가</button>
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.name')} value={newGeminiName} onChange={e => setNewGeminiName(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.apiKey')} value={newGeminiKey} onChange={e => setNewGeminiKey(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.modelName')} value={newGeminiModelName} onChange={e => setNewGeminiModelName(e.target.value)} required />
+                            <button type="submit" className="btn btn-primary">{t('aiManager.add')}</button>
                         </form>
                         <div className="ai-card-list">
                             {geminiConfigs.map((cfg) => (
@@ -321,8 +326,8 @@ function AIManager() {
                                         <div className="ai-card-item-desc">{cfg.model_name}</div>
                                     </div>
                                     <div className="ai-card-item-actions">
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectGeminiConfig(cfg.name)} disabled={selectedGeminiConfig === cfg.name}>선택</button>
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteGeminiConfig(cfg.name)}>삭제</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectGeminiConfig(cfg.name)} disabled={selectedGeminiConfig === cfg.name}>{t('aiManager.select')}</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteGeminiConfig(cfg.name)}>{t('aiManager.delete')}</button>
                                     </div>
                                 </div>
                             ))}
@@ -334,10 +339,10 @@ function AIManager() {
                     <div className="ai-card-header">Claude</div>
                     <div className="ai-card-body">
                         <form onSubmit={handleAddClaudeConfig} className="ai-card-form">
-                            <input type="text" className="ai-input" placeholder="이름" value={newClaudeName} onChange={e => setNewClaudeName(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="API 키" value={newClaudeKey} onChange={e => setNewClaudeKey(e.target.value)} required />
-                            <input type="text" className="ai-input" placeholder="모델명" value={newClaudeModelName} onChange={e => setNewClaudeModelName(e.target.value)} required />
-                            <button type="submit" className="btn btn-primary">추가</button>
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.name')} value={newClaudeName} onChange={e => setNewClaudeName(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.apiKey')} value={newClaudeKey} onChange={e => setNewClaudeKey(e.target.value)} required />
+                            <input type="text" className="ai-input" placeholder={t('aiManager.placeholders.modelName')} value={newClaudeModelName} onChange={e => setNewClaudeModelName(e.target.value)} required />
+                            <button type="submit" className="btn btn-primary">{t('aiManager.add')}</button>
                         </form>
                         <div className="ai-card-list">
                             {claudeConfigs.map((cfg) => (
@@ -347,8 +352,8 @@ function AIManager() {
                                         <div className="ai-card-item-desc">{cfg.model_name}</div>
                                     </div>
                                     <div className="ai-card-item-actions">
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectClaudeConfig(cfg.name)} disabled={selectedClaudeConfig === cfg.name}>선택</button>
-                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteClaudeConfig(cfg.name)}>삭제</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectClaudeConfig(cfg.name)} disabled={selectedClaudeConfig === cfg.name}>{t('aiManager.select')}</button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => handleDeleteClaudeConfig(cfg.name)}>{t('aiManager.delete')}</button>
                                     </div>
                                 </div>
                             ))}

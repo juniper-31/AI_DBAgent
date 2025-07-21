@@ -11,8 +11,14 @@ import AIManager from './components/AIManager'; // OpenAIManager 대신 AIManage
 import PlaybookComponent from './components/PlaybookComponent';
 import AwsRdsResource from './components/AwsRdsResource';
 import AwsCloudwatchResource from './components/AwsCloudwatchResource';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { useTranslation } from './utils/translations';
+import LanguageToggle from './components/LanguageToggle';
 
-function App() {
+function AppContent() {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
+  
   const [databases, setDatabases] = useState([]);
   const [selectedDb, setSelectedDb] = useState('');
   // OpenAI 키 관련 상태는 AIManager에서 관리하므로 여기서는 제거하거나 필요에 따라 변경
@@ -22,19 +28,19 @@ function App() {
   const [showAwsSubMenu, setShowAwsSubMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // 사이드바 접힘 상태
 
-  // 네비게이션 메뉴
+  // 네비게이션 메뉴 (다국어 지원)
   const menuItems = [
-    { id: 'chat', label: '💬 AI 채팅', icon: '💬', path: '/chat' },
-    { id: 'databases', label: '🗄️ DB 관리', icon: '🗄️', path: '/databases' },
-    { id: 'ai-manager', label: '🤖 AI 등록', icon: '🤖', path: '/ai-manager' }, // 메뉴 텍스트 및 경로 변경
-    { id: 'playbooks', label: '📖 플레이북', icon: '📖', path: '/playbooks' },
-    { id: 'monitoring', label: '📊 모니터링', icon: '📊', path: '/monitoring' },
-    { id: 'slowquery', label: '🐌 슬로우 쿼리', icon: '🐌', path: '/slowquery' },
-    { id: 'aws', label: '☁️ AWS 통합', icon: '☁️', path: '/aws' },
-    { id: 'aws-resources', label: '☁️ AWS 리소스 조회', icon: '☁️',
+    { id: 'chat', label: `💬 ${t('sidebar.aiChat')}`, icon: '💬', path: '/chat' },
+    { id: 'databases', label: `🗄️ ${t('sidebar.dbManagement')}`, icon: '🗄️', path: '/databases' },
+    { id: 'ai-manager', label: `🤖 ${t('sidebar.aiTools')}`, icon: '🤖', path: '/ai-manager' },
+    { id: 'playbooks', label: `📖 ${t('sidebar.playbooks')}`, icon: '📖', path: '/playbooks' },
+    { id: 'monitoring', label: `📊 ${t('sidebar.monitoring')}`, icon: '📊', path: '/monitoring' },
+    { id: 'slowquery', label: `🐌 ${t('sidebar.slowQuery')}`, icon: '🐌', path: '/slowquery' },
+    { id: 'aws', label: `☁️ ${t('sidebar.awsTools')}`, icon: '☁️', path: '/aws' },
+    { id: 'aws-resources', label: `☁️ ${t('sidebar.awsResourceMonitoring')}`, icon: '☁️',
       children: [
-        { id: 'aws-rds', label: 'RDS 조회', icon: '🗄️', path: '/aws-rds' },
-        { id: 'aws-cloudwatch', label: 'CloudWatch 조회', icon: '📊', path: '/aws-cloudwatch' }
+        { id: 'aws-rds', label: language === 'ko' ? 'RDS 조회' : 'RDS Query', icon: '🗄️', path: '/aws-rds' },
+        { id: 'aws-cloudwatch', label: language === 'ko' ? 'CloudWatch 조회' : 'CloudWatch Query', icon: '📊', path: '/aws-cloudwatch' }
       ]
     }
   ];
@@ -154,7 +160,7 @@ function App() {
     return (
       <div className="app-loading">
         <div className="loading-spinner"></div>
-        <p>데이터베이스 정보를 불러오는 중...</p>
+        <p>{language === 'ko' ? '데이터베이스 정보를 불러오는 중...' : 'Loading database information...'}</p>
       </div>
     );
   }
@@ -171,15 +177,19 @@ function App() {
               <button
                 className="sidebar-toggle-btn"
                 onClick={() => setSidebarCollapsed(v => !v)}
-                title={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
-                aria-label="사이드바 토글"
+                title={sidebarCollapsed ? (language === 'ko' ? '사이드바 펼치기' : 'Expand sidebar') : (language === 'ko' ? '사이드바 접기' : 'Collapse sidebar')}
+                aria-label={language === 'ko' ? '사이드바 토글' : 'Toggle sidebar'}
               >
                 {sidebarCollapsed ? <span>&#9776;</span> : <span>&#10094;</span>}
               </button>
             </div>
-            {!sidebarCollapsed && <div className="sidebar-desc">SRE/DBA용 AI 도구</div>}
+            {!sidebarCollapsed && <div className="sidebar-desc">{language === 'ko' ? 'SRE/DBA용 AI 도구' : 'AI Tools for SRE/DBA'}</div>}
           </div>
           <SidebarNav />
+          {/* 언어 전환 버튼을 사이드바 하단에 추가 */}
+          <div className="sidebar-footer">
+            <LanguageToggle />
+          </div>
         </div>
         <div className="main-content">
           <div className="container">
@@ -199,6 +209,14 @@ function App() {
         </div>
       </div>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }
 

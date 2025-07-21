@@ -1,17 +1,27 @@
 // MonitoringComponent.js
 // DB별 실시간 모니터링, 차트, 상세 페이지
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
-const CLOUDWATCH_METRICS = [
-  { key: 'connections', name: 'DatabaseConnections', label: '연결 수', unit: '개', color: '#007bff' },
-  { key: 'cpu', name: 'CPUUtilization', label: 'CPU 사용률', unit: '%', color: '#28a745' },
-  { key: 'memory', name: 'FreeableMemory', label: '남은 메모리', unit: 'GB', color: '#ffc107' }, // 수정: 카드 제목/단위
-  { key: 'storage', name: 'FreeStorageSpace', label: '사용 가능 스토리지', unit: 'GB', color: '#6f42c1' },
-  { key: 'read_iops', name: 'ReadIOPS', label: '읽기 IOPS', unit: '', color: '#17a2b8' },
-  { key: 'write_iops', name: 'WriteIOPS', label: '쓰기 IOPS', unit: '', color: '#fd7e14' }
-];
+// CLOUDWATCH_METRICS는 함수 내부로 이동하여 다국어 지원
 
 function MonitoringComponent({ selectedDb, databases, onDbChange }) {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
+  
+  // 다국어 지원 CloudWatch 메트릭 정의
+  const CLOUDWATCH_METRICS = [
+    { key: 'connections', name: 'DatabaseConnections', label: t('monitoring.connections'), unit: t('monitoring.unit.count'), color: '#007bff' },
+    { key: 'cpu', name: 'CPUUtilization', label: t('monitoring.cpuUsage'), unit: t('monitoring.unit.percent'), color: '#28a745' },
+    { key: 'memory', name: 'FreeableMemory', label: t('monitoring.freeMemory'), unit: t('monitoring.unit.gb'), color: '#ffc107' },
+    { key: 'storage', name: 'FreeStorageSpace', label: t('monitoring.freeStorage'), unit: t('monitoring.unit.gb'), color: '#6f42c1' },
+    { key: 'read_latency', name: 'ReadLatency', label: t('monitoring.readLatency'), unit: t('monitoring.unit.ms'), color: '#dc3545' },
+    { key: 'write_latency', name: 'WriteLatency', label: t('monitoring.writeLatency'), unit: t('monitoring.unit.ms'), color: '#fd7e14' },
+    { key: 'read_iops', name: 'ReadIOPS', label: t('monitoring.readIops'), unit: '', color: '#17a2b8' },
+    { key: 'write_iops', name: 'WriteIOPS', label: t('monitoring.writeIops'), unit: '', color: '#fd7e14' }
+  ];
+  
   const [metrics, setMetrics] = useState({});
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -22,17 +32,17 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
   const [instanceType, setInstanceType] = useState('');
 
   const timeRanges = [
-    { value: '1h', label: '1시간' },
-    { value: '6h', label: '6시간' },
-    { value: '24h', label: '24시간' },
-    { value: '7d', label: '7일' }
+    { value: '1h', label: language === 'ko' ? '1시간' : '1 Hour' },
+    { value: '6h', label: language === 'ko' ? '6시간' : '6 Hours' },
+    { value: '24h', label: language === 'ko' ? '24시간' : '24 Hours' },
+    { value: '7d', label: language === 'ko' ? '7일' : '7 Days' }
   ];
 
   const refreshIntervals = [
-    { value: 10, label: '10초' },
-    { value: 30, label: '30초' },
-    { value: 60, label: '1분' },
-    { value: 300, label: '5분' }
+    { value: 10, label: language === 'ko' ? '10초' : '10s' },
+    { value: 30, label: language === 'ko' ? '30초' : '30s' },
+    { value: 60, label: language === 'ko' ? '1분' : '1m' },
+    { value: 300, label: language === 'ko' ? '5분' : '5m' }
   ];
 
   // 시간 범위 → hours 변환
@@ -132,7 +142,7 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
       </div>
       <div className="metric-value">
         {value === null || value === undefined || isNaN(value) ? (
-          <span className="no-data">데이터 없음</span>
+          <span className="no-data">{t('common.noData')}</span>
         ) : (
           <span className="value" style={{ color }}>{value}</span>
         )}
@@ -149,7 +159,7 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
         {error ? (
           <div className="no-data metric-error">{error}</div>
         ) : (!data || data.length === 0) ? (
-          <div className="no-data">데이터 없음</div>
+          <div className="no-data">{t('common.noData')}</div>
         ) : (
           <svg width="100%" height="200" viewBox="0 0 400 200">
             {data.length > 1 && (
@@ -201,16 +211,16 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
       {/* 헤더 */}
       <div className="monitoring-header">
         <div className="header-left">
-          <h2>데이터베이스 모니터링 (CloudWatch)</h2>
+          <h2>{t('monitoring.title')}</h2>
           {selectedDb && (
             <span className="selected-db">
-              선택된 DB: {selectedDb}
+              {t('monitoring.selectedDb')}: {selectedDb}
               {cloudwatchId && (
                 <span style={{ fontSize: '13px', color: '#888', marginLeft: 12 }}>
                   (CloudWatch ID: <b>{cloudwatchId}</b>
                   {instanceType && (
                     <span style={{ marginLeft: 8 }}>
-                      | 인스턴스 타입: <b>{instanceType}</b>
+                      | {language === 'ko' ? '인스턴스 타입' : 'Instance Type'}: <b>{instanceType}</b>
                     </span>
                   )}
                   )
@@ -226,7 +236,7 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
             onChange={(e) => onDbChange(e.target.value)}
             className="db-select"
           >
-            <option value="">DB 선택</option>
+            <option value="">{t('monitoring.selectDb')}</option>
             {databases?.map(db => (
               <option key={db.name} value={db.name}>
                 {db.name}
@@ -264,7 +274,7 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
               checked={isAutoRefresh}
               onChange={(e) => setIsAutoRefresh(e.target.checked)}
             />
-            자동 새로고침
+            {language === 'ko' ? '자동 새로고침' : 'Auto Refresh'}
           </label>
           {/* 수동 새로고침 */}
           <button 
@@ -272,13 +282,13 @@ function MonitoringComponent({ selectedDb, databases, onDbChange }) {
             disabled={loading || !selectedDb}
             className="btn btn-outline"
           >
-            {loading ? '새로고침 중...' : '🔄 새로고침'}
+            {loading ? (language === 'ko' ? '새로고침 중...' : 'Refreshing...') : (language === 'ko' ? '🔄 새로고침' : '🔄 Refresh')}
           </button>
         </div>
       </div>
       {!selectedDb ? (
         <div className="no-db-selected">
-          <p>모니터링할 데이터베이스를 선택해주세요.</p>
+          <p>{t('monitoring.selectDbMessage')}</p>
         </div>
       ) : (
         <div className="monitoring-content">

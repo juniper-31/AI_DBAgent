@@ -1,8 +1,12 @@
 // AwsIntegrationComponent.js
 // AWS 인증, RDS/CloudWatch 연동, 상태 표시
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 function AwsIntegrationComponent({ selectedDb, databases }) {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   const [credentialsList, setCredentialsList] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [authType, setAuthType] = useState('accessKey');
@@ -296,30 +300,30 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       <div className="aws-credentials-list">
         {/* 인증 정보 리스트 (Access Key만 여러 개) */}
         <div className="credentials-header-row">
-          <h3>Access Key 인증 정보</h3>
+          <h3>{t('awsIntegration.credentialsList')}</h3>
           <button className="btn btn-outline add-cred-btn" onClick={() => setShowAddForm(v => !v)}>
-            {showAddForm ? '− 추가 닫기' : '+ 인증 추가'}
+            {showAddForm ? `− ${t('awsIntegration.closeAdd')}` : `+ ${t('awsIntegration.addCredential')}`}
           </button>
         </div>
         {credentialsList.length === 0 && (
-          <div className="no-credentials">등록된 인증 정보가 없습니다.</div>
+          <div className="no-credentials">{t('awsIntegration.noCredentials')}</div>
         )}
         {credentialsList.map(cred => cred.type !== 'iamRole' && cred.type !== 'sso' && (
           <div key={cred.id} className={`credential-card${cred.is_active ? ' active' : ''}`}>
             <div className="cred-row">
-              <span className="cred-label">Access Key</span>
+              <span className="cred-label">{t('awsIntegration.accessKey')}</span>
               <span className="cred-value">{cred.access_key.substring(0, 4)}...{cred.access_key.slice(-4)}</span>
             </div>
             <div className="cred-row">
-              <span className="cred-label">Region</span>
+              <span className="cred-label">{t('awsIntegration.region')}</span>
               <span className="cred-value">{cred.region}</span>
             </div>
             <div className="cred-actions">
               {!cred.is_active && (
-                <button className="btn btn-outline btn-sm" onClick={() => handleSetActive(cred.id)}>기본 사용</button>
+                <button className="btn btn-outline btn-sm" onClick={() => handleSetActive(cred.id)}>{t('awsIntegration.setDefault')}</button>
               )}
-              {cred.is_active && <span className="active-badge">기본</span>}
-              <button className="btn btn-outline btn-sm" onClick={() => handleDeleteCredential(cred.id)}>삭제</button>
+              {cred.is_active && <span className="active-badge">{t('awsIntegration.default')}</span>}
+              <button className="btn btn-outline btn-sm" onClick={() => handleDeleteCredential(cred.id)}>{t('awsIntegration.delete')}</button>
             </div>
           </div>
         ))}
@@ -329,7 +333,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
             {credentialsList.length === 0 ? (
               <>
                 <div className="form-group">
-                  <label>인증 방식</label>
+                  <label>{t('awsIntegration.authMethod')}</label>
                   <select value={authType} onChange={e => setAuthType(e.target.value)} className="form-control wide-input">
                     <option value="accessKey">Access Key</option>
                     <option value="iamRole">IAM Role (EC2/ECS/EKS)</option>
@@ -339,15 +343,15 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                 {authType === 'accessKey' && (
                   <>
                     <div className="form-group">
-                      <label>Access Key *</label>
+                      <label>{t('awsIntegration.accessKey')} *</label>
                       <input type="text" value={newAccessKey} onChange={e => setNewAccessKey(e.target.value)} className="form-control wide-input" />
                     </div>
                     <div className="form-group">
-                      <label>Secret Key *</label>
+                      <label>{t('awsIntegration.secretKey')} *</label>
                       <input type="password" value={newSecretKey} onChange={e => setNewSecretKey(e.target.value)} className="form-control wide-input" />
                     </div>
                     <div className="form-group">
-                      <label>Token (옵션)</label>
+                      <label>{t('awsIntegration.sessionToken')} ({t('awsIntegration.optional')})</label>
                       <input type="text" value={sessionToken} onChange={e => setSessionToken(e.target.value)} className="form-control wide-input" />
                     </div>
                     <div className="form-group">
@@ -362,10 +366,10 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                 )}
                 {authType === 'iamRole' && (
                   <div className="form-group">
-                    <label>IAM Role 기반 인증</label>
+                    <label>IAM Role {language === 'ko' ? '기반 인증' : 'Authentication'}</label>
                     <div style={{ color: '#888', fontSize: '14px' }}>
-                      EC2/ECS/EKS 인스턴스에 할당된 IAM Role을 자동으로 사용합니다.<br />
-                      별도의 키 입력 없이 진행하세요.
+                      {t('awsIntegration.iamRoleInfo')}<br />
+                      {t('awsIntegration.iamRoleInfo2')}
                     </div>
                   </div>
                 )}
@@ -389,19 +393,19 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
             ) : (
               <>
                 <div className="form-group">
-                  <label>Access Key *</label>
+                  <label>{t('awsIntegration.accessKey')} *</label>
                   <input type="text" value={newAccessKey} onChange={e => setNewAccessKey(e.target.value)} className="form-control wide-input" />
                 </div>
                 <div className="form-group">
-                  <label>Secret Key *</label>
+                  <label>{t('awsIntegration.secretKey')} *</label>
                   <input type="password" value={newSecretKey} onChange={e => setNewSecretKey(e.target.value)} className="form-control wide-input" />
                 </div>
                 <div className="form-group">
-                  <label>Token (옵션)</label>
+                  <label>{t('awsIntegration.sessionToken')} ({t('awsIntegration.optional')})</label>
                   <input type="text" value={sessionToken} onChange={e => setSessionToken(e.target.value)} className="form-control wide-input" />
                 </div>
                 <div className="form-group">
-                  <label>리전</label>
+                  <label>{t('awsIntegration.region')}</label>
                   <select value={newAwsRegion} onChange={e => setNewAwsRegion(e.target.value)} className="form-control wide-input">
                     {awsRegions.map(region => (
                       <option key={region.value} value={region.value}>{region.label}</option>
@@ -411,8 +415,8 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
               </>
             )}
             <div className="form-actions">
-              <button className="btn btn-primary" onClick={handleAddCredential} disabled={loading || !newAccessKey || !newSecretKey}>추가</button>
-              <button className="btn btn-outline" onClick={() => setShowAddForm(false)}>취소</button>
+              <button className="btn btn-primary" onClick={handleAddCredential} disabled={loading || !newAccessKey || !newSecretKey}>{t('awsIntegration.add')}</button>
+              <button className="btn btn-outline" onClick={() => setShowAddForm(false)}>{t('awsIntegration.cancel')}</button>
             </div>
           </div>
         )}
@@ -420,38 +424,38 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       <div className="aws-summary-col">
         <div className="aws-summary-card">
           <div className="summary-row">
-            <div className="summary-label">연결 상태</div>
+            <div className="summary-label">{t('awsIntegration.connectionStatus')}</div>
             <div className="summary-value">
               <span className="status-indicator" style={{ backgroundColor: getStatusColor(connectionStatus) }}></span>
               <span className="status-text">
-                {connectionStatus === 'connected' && '연결됨'}
-                {connectionStatus === 'connecting' && '연결 중...'}
-                {connectionStatus === 'error' && '연결 오류'}
-                {connectionStatus === 'disconnected' && '연결 안됨'}
+                {connectionStatus === 'connected' && t('awsIntegration.connected')}
+                {connectionStatus === 'connecting' && t('awsIntegration.connecting')}
+                {connectionStatus === 'error' && t('awsIntegration.connectionError')}
+                {connectionStatus === 'disconnected' && t('awsIntegration.disconnected')}
               </span>
             </div>
           </div>
           <div className="summary-row">
-            <div className="summary-label">Access Key</div>
+            <div className="summary-label">{t('awsIntegration.accessKey')}</div>
             <div className="summary-value">{accessKey ? accessKey.substring(0, 4) + '...' + accessKey.slice(-4) : '-'}</div>
           </div>
           <div className="summary-row">
-            <div className="summary-label">AWS 리전</div>
+            <div className="summary-label">{t('awsIntegration.region')}</div>
             <div className="summary-value">{awsRegion || '-'}</div>
           </div>
           <button className="btn btn-outline summary-toggle-btn" onClick={() => setShowConfigForm(v => !v)}>
-            {showConfigForm ? '− 설정 닫기' : '+ 설정 변경'}
+            {showConfigForm ? `− ${t('awsIntegration.closeSettings')}` : `+ ${t('awsIntegration.changeSettings')}`}
           </button>
         </div>
 
         {/* 설정 폼 (토글) */}
         {showConfigForm && (
           <div className="aws-config-section">
-            <h3>AWS 인증 설정</h3>
+            <h3>AWS {language === 'ko' ? '인증 설정' : 'Authentication Settings'}</h3>
             {error && (<div className="error-message">{error}</div>)}
             {success && (<div className="success-message">✅ {success}</div>)}
             <div className="form-group">
-              <label htmlFor="auth-type">인증 방식</label>
+              <label htmlFor="auth-type">{t('awsIntegration.authMethod')}</label>
               <select
                 id="auth-type"
                 value={authType}
@@ -466,7 +470,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
             {authType === 'accessKey' && (
               <>
                 <div className="form-group">
-                  <label htmlFor="access-key">Access Key *</label>
+                  <label htmlFor="access-key">{t('awsIntegration.accessKey')} *</label>
                   <input
                     type="text"
                     id="access-key"
@@ -477,7 +481,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="secret-key">Secret Key *</label>
+                  <label htmlFor="secret-key">{t('awsIntegration.secretKey')} *</label>
                   <input
                     type="password"
                     id="secret-key"
@@ -488,7 +492,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="session-token">Session Token (옵션)</label>
+                  <label htmlFor="session-token">{t('awsIntegration.sessionToken')} ({t('awsIntegration.optional')})</label>
                   <input
                     type="text"
                     id="session-token"
@@ -502,10 +506,10 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
             )}
             {authType === 'iamRole' && (
               <div className="form-group">
-                <label>IAM Role 기반 인증</label>
+                <label>IAM Role {language === 'ko' ? '기반 인증' : 'Authentication'}</label>
                 <div style={{ color: '#888', fontSize: '14px' }}>
-                  EC2/ECS/EKS 인스턴스에 할당된 IAM Role을 자동으로 사용합니다.<br />
-                  별도의 키 입력 없이 진행하세요.
+                  {t('awsIntegration.iamRoleInfo')}<br />
+                  {t('awsIntegration.iamRoleInfo2')}
                 </div>
               </div>
             )}
@@ -563,7 +567,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
             )}
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="aws-region">AWS 리전</label>
+                <label htmlFor="aws-region">{t('awsIntegration.region')}</label>
                 <select
                   id="aws-region"
                   value={awsRegion}
@@ -584,24 +588,24 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                 disabled={loading || !selectedId}
                 className="btn btn-outline"
               >
-                {loading ? '테스트 중...' : '🔗 연결 테스트'}
+                {loading ? t('awsIntegration.testing') : `🔗 ${t('awsIntegration.connectionTest')}`}
               </button>
               <button 
                 onClick={handleSave}
                 disabled={loading}
                 className="btn btn-primary"
               >
-                {loading ? '저장 중...' : '💾 설정 저장'}
+                {loading ? t('awsIntegration.saving') : `💾 ${t('awsIntegration.saveSettings')}`}
               </button>
             </div>
           </div>
         )}
         {/* 보안 주의사항 */}
         <div className="security-notice">
-          <span role="img" aria-label="lock">🔒</span> <b>보안 주의사항</b>
+          <span role="img" aria-label="lock">🔒</span> <b>{t('awsIntegration.securityNotice')}</b>
           <ul>
-            <li>AWS 자격 증명은 안전하게 암호화되어 저장됩니다.</li>
-            <li>최소·취소 위쳔에 따라 필요한 권한만 부여하세요.</li>
+            <li>{t('awsIntegration.securityTip1')}</li>
+            <li>{t('awsIntegration.securityTip2')}</li>
           </ul>
         </div>
       </div>

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const PlaybookComponent = ({ selectedDb, databases }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   const [playbooks, setPlaybooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [selectedCategory, setSelectedCategory] = useState(() => language === 'ko' ? '전체' : 'All');
   const [expandedPlaybook, setExpandedPlaybook] = useState(null);
 
   // 플레이북 목록 가져오기
@@ -20,11 +24,11 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
         setPlaybooks(playbooksData);
       } else {
         console.error('플레이북 목록 가져오기 실패');
-        setError('플레이북 목록을 가져오는 중 오류가 발생했습니다.');
+        setError(t('playbook.fetchError'));
       }
     } catch (error) {
       console.error('플레이북 목록 가져오기 실패:', error);
-      setError('플레이북 목록을 가져오는 중 오류가 발생했습니다.');
+      setError(t('playbook.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -33,7 +37,7 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
   // 플레이북 실행 (AI 채팅으로 단계별 실행)
   const handleRunPlaybook = async (playbook) => {
     if (!selectedDb) {
-      setError('먼저 데이터베이스를 선택해주세요.');
+      setError(t('playbook.selectDbFirst'));
       return;
     }
 
@@ -53,7 +57,7 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
       // 세션 스토리지에 플레이북 정보 저장
       sessionStorage.setItem('runningPlaybook', JSON.stringify(playbookData));
       
-      setSuccess(`플레이북 "${playbook.name}"을 AI 채팅에서 실행합니다...`);
+      setSuccess(t('playbook.playbookRunning').replace('{name}', playbook.name));
       
       // AI 채팅 페이지로 리다이렉트
       setTimeout(() => {
@@ -61,7 +65,7 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
       }, 1500);
       
     } catch (error) {
-      setError('플레이북 실행 중 오류가 발생했습니다.');
+      setError(t('playbook.playbookError'));
     } finally {
       setLoading(false);
     }
@@ -69,13 +73,15 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
 
   // 카테고리 목록 생성
   const getCategories = () => {
-    const categories = ['전체', ...new Set(playbooks.map(p => p.category).filter(Boolean))];
+    const allText = language === 'ko' ? '전체' : 'All';
+    const categories = [allText, ...new Set(playbooks.map(p => p.category).filter(Boolean))];
     return categories;
   };
 
   // 카테고리별 플레이북 필터링
   const getFilteredPlaybooks = () => {
-    if (selectedCategory === '전체') {
+    const allText = language === 'ko' ? '전체' : 'All';
+    if (selectedCategory === allText) {
       return playbooks;
     }
     return playbooks.filter(p => p.category === selectedCategory);
@@ -86,9 +92,36 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
     setExpandedPlaybook(expandedPlaybook === index ? null : index);
   };
 
+  // 카테고리 표시명 가져오기
+  const getDisplayCategoryName = (category) => {
+    const allText = language === 'ko' ? '전체' : 'All';
+    if (category === allText) {
+      return category;
+    }
+    
+    // 번역 시도
+    const translationKey = `playbook.categories.${category}`;
+    const translated = t(translationKey);
+    
+    // 번역이 실패했으면 (키가 그대로 반환되면) 원본 카테고리명 사용
+    if (translated === translationKey) {
+      return category;
+    }
+    
+    return translated;
+  };
+
   useEffect(() => {
     fetchPlaybooks();
   }, []);
+
+  // 언어 변경 시 selectedCategory 동기화
+  useEffect(() => {
+    const allText = language === 'ko' ? '전체' : 'All';
+    if (selectedCategory === '전체' || selectedCategory === 'All') {
+      setSelectedCategory(allText);
+    }
+  }, [language]);
 
   const filteredPlaybooks = getFilteredPlaybooks();
 
@@ -96,14 +129,14 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
     <div className="page-content">
       <div className="page-header">
         <div className="section-header">
-          <h2>📖 플레이북 관리</h2>
-          <p>데이터베이스 운영 작업을 자동화된 플레이북으로 효율적으로 수행하세요.</p>
+          <h2>📖 {t('playbook.title')}</h2>
+          <p>{t('playbook.description')}</p>
         </div>
 
         {/* 현재 선택된 DB 표시 */}
         {selectedDb && (
           <div className="current-db-info">
-            <span className="db-label">선택된 DB:</span>
+            <span className="db-label">{t('playbook.selectedDb')}:</span>
             <span className="db-name">{selectedDb}</span>
           </div>
         )}
@@ -128,24 +161,28 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
         {/* DB 선택 안내 */}
         {!selectedDb && (
           <div className="alert alert-warning">
-            <span>⚠️ 플레이북을 실행하려면 먼저 데이터베이스를 선택해주세요.</span>
+            <span>{t('playbook.selectDbWarning')}</span>
           </div>
         )}
 
         {/* 카테고리 필터 */}
         {playbooks.length > 0 && (
           <div className="category-filter">
-            <h3>카테고리별 필터</h3>
+            <h3>{t('common.filterByCategory')}</h3>
             <div className="category-buttons">
-              {getCategories().map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-                >
-                  {category} ({category === '전체' ? playbooks.length : playbooks.filter(p => p.category === category).length})
-                </button>
-              ))}
+              {getCategories().map(category => {
+                const allText = language === 'ko' ? '전체' : 'All';
+                const count = category === allText ? playbooks.length : playbooks.filter(p => p.category === category).length;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+                  >
+                    {getDisplayCategoryName(category)} ({count})
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -155,12 +192,12 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
           {loading ? (
             <div className="loading-state">
               <div className="loading-spinner"></div>
-              <p>플레이북을 불러오는 중...</p>
+              <p>{t('playbook.loading')}</p>
             </div>
           ) : filteredPlaybooks.length === 0 ? (
             <div className="empty-state">
-              <h3>플레이북이 없습니다</h3>
-              <p>{selectedCategory === '전체' ? '사용 가능한 플레이북이 없습니다.' : `"${selectedCategory}" 카테고리에 플레이북이 없습니다.`}</p>
+              <h3>{t('playbook.noPlaybooks')}</h3>
+              <p>{selectedCategory === (language === 'ko' ? '전체' : 'All') ? t('playbook.noAvailablePlaybooks') : t('playbook.noCategoryPlaybooks').replace('{category}', selectedCategory)}</p>
             </div>
           ) : (
             <div className="playbook-grid">
@@ -178,7 +215,7 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
                     <button
                       onClick={() => togglePlaybookExpansion(index)}
                       className="expand-btn"
-                      title={expandedPlaybook === index ? '접기' : '자세히 보기'}
+                      title={expandedPlaybook === index ? (language === 'ko' ? '접기' : 'Collapse') : (language === 'ko' ? '자세히 보기' : 'Expand')}
                     >
                       {expandedPlaybook === index ? '▲' : '▼'}
                     </button>
@@ -191,7 +228,7 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
                   {expandedPlaybook === index && (
                     <div className="playbook-details">
                       <div className="playbook-steps">
-                        <h4>📋 실행 단계 ({playbook.steps.length}단계)</h4>
+                        <h4>📋 {t('playbook.executionSteps').replace('{count}', playbook.steps.length)}</h4>
                         <div className="steps-list">
                           {playbook.steps.map((step, stepIndex) => (
                             <div key={stepIndex} className="step-item">
@@ -213,15 +250,15 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
                       className="btn btn-primary playbook-run-btn"
                       disabled={loading || !selectedDb}
                     >
-                      {loading ? '실행 중...' : '🚀 플레이북 실행'}
+                      {loading ? t('playbook.running') : t('playbook.runPlaybook')}
                     </button>
                     
                     <div className="playbook-meta">
                       <span className="meta-item">
-                        ⏱️ 예상 시간: {playbook.estimatedTime || '2-5분'}
+                        ⏱️ {t('playbook.estimatedTime')}: {playbook.estimatedTime || (language === 'ko' ? '2-5분' : '2-5 min')}
                       </span>
                       <span className="meta-item">
-                        📊 단계: {playbook.steps.length}개
+                        📊 {t('playbook.steps').replace('{count}', playbook.steps.length)}
                       </span>
                     </div>
                   </div>
@@ -234,39 +271,50 @@ const PlaybookComponent = ({ selectedDb, databases }) => {
         {/* 사용법 안내 */}
         <div className="usage-guide-section">
           <div className="card">
-            <h3>💡 플레이북 사용 가이드</h3>
+            <h3>{t('playbook.usageGuide')}</h3>
             <div className="guide-content">
               <div className="guide-steps">
                 <div className="guide-step">
                   <span className="step-icon">1️⃣</span>
                   <div>
-                    <strong>데이터베이스 선택</strong>
-                    <p>상단에서 작업할 데이터베이스를 선택하세요</p>
+                    <strong>{t('playbook.selectDatabase')}</strong>
+                    <p>{t('playbook.selectDatabaseDesc')}</p>
                   </div>
                 </div>
                 <div className="guide-step">
                   <span className="step-icon">2️⃣</span>
                   <div>
-                    <strong>플레이북 선택</strong>
-                    <p>목적에 맞는 플레이북을 카테고리별로 찾아보세요</p>
+                    <strong>{t('playbook.selectPlaybook')}</strong>
+                    <p>{t('playbook.selectPlaybookDesc')}</p>
                   </div>
                 </div>
                 <div className="guide-step">
                   <span className="step-icon">3️⃣</span>
                   <div>
-                    <strong>실행 및 모니터링</strong>
-                    <p>플레이북 실행 후 AI 채팅에서 단계별 결과를 확인하세요</p>
+                    <strong>{t('playbook.executeAndMonitor')}</strong>
+                    <p>{t('playbook.executeAndMonitorDesc')}</p>
                   </div>
                 </div>
               </div>
               
               <div className="guide-tips">
-                <h4>💡 활용 팁</h4>
+                <h4>💡 {t('common.tips')}</h4>
                 <ul>
-                  <li><strong>정기 점검:</strong> 매일/주간 플레이북으로 시스템 상태를 정기적으로 체크하세요</li>
-                  <li><strong>성능 최적화:</strong> 슬로우 쿼리나 성능 이슈 발견 시 관련 플레이북을 실행하세요</li>
-                  <li><strong>보안 감사:</strong> 개인정보 보호 및 보안 점검을 정기적으로 수행하세요</li>
-                  <li><strong>장애 대응:</strong> 긴급 상황 시 응급 대응 플레이북을 활용하세요</li>
+                  {language === 'ko' ? (
+                    <>
+                      <li><strong>정기 점검:</strong> 매일/주간 플레이북으로 시스템 상태를 정기적으로 체크하세요</li>
+                      <li><strong>성능 최적화:</strong> 슬로우 쿼리나 성능 이슈 발견 시 관련 플레이북을 실행하세요</li>
+                      <li><strong>보안 감사:</strong> 개인정보 보호 및 보안 점검을 정기적으로 수행하세요</li>
+                      <li><strong>장애 대응:</strong> 긴급 상황 시 응급 대응 플레이북을 활용하세요</li>
+                    </>
+                  ) : (
+                    <>
+                      <li><strong>Regular Checks:</strong> Use daily/weekly playbooks to regularly check system status</li>
+                      <li><strong>Performance Optimization:</strong> Run related playbooks when slow queries or performance issues are found</li>
+                      <li><strong>Security Audit:</strong> Regularly perform privacy protection and security checks</li>
+                      <li><strong>Incident Response:</strong> Use emergency response playbooks in urgent situations</li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>

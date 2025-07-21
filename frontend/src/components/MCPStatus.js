@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const MCPStatus = () => {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
   const [mcpData, setMcpData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -13,7 +17,7 @@ const MCPStatus = () => {
         setMcpData(data);
       }
     } catch (error) {
-      console.error('MCP 상태 조회 실패:', error);
+      console.error('MCP status fetch failed:', error);
     } finally {
       setLoading(false);
     }
@@ -25,13 +29,13 @@ const MCPStatus = () => {
       const response = await fetch('/api/mcp/sync', { method: 'POST' });
       const data = await response.json();
       if (data.status === 'success') {
-        alert('동기화가 완료되었습니다!');
+        alert(t('mcpStatus.syncCompleted'));
         fetchMCPStatus(); // 상태 새로고침
       } else {
-        alert(`동기화 실패: ${data.message || '알 수 없는 오류'}`);
+        alert(`${t('mcpStatus.syncFailed')}: ${data.message || t('mcpStatus.unknownError')}`);
       }
     } catch (error) {
-      alert(`동기화 실패: ${error.message}`);
+      alert(`${t('mcpStatus.syncFailed')}: ${error.message}`);
     } finally {
       setSyncing(false);
     }
@@ -42,11 +46,11 @@ const MCPStatus = () => {
   }, []);
 
   if (loading) {
-    return <div className="mcp-status loading">MCP 상태 로딩 중...</div>;
+    return <div className="mcp-status loading">{t('mcpStatus.loading')}</div>;
   }
 
   if (!mcpData) {
-    return <div className="mcp-status error">MCP 상태를 불러올 수 없습니다.</div>;
+    return <div className="mcp-status error">{t('mcpStatus.loadError')}</div>;
   }
 
   const { context, recommendations } = mcpData;
@@ -57,36 +61,36 @@ const MCPStatus = () => {
   return (
     <div className="mcp-status">
       <div className="mcp-header">
-        <h3>🔗 MCP 통합 상태</h3>
+        <h3>🔗 {t('mcpStatus.title')}</h3>
         <button 
           onClick={handleSync} 
           disabled={syncing}
           className="sync-button"
         >
-          {syncing ? '동기화 중...' : '🔄 동기화'}
+          {syncing ? t('mcpStatus.syncing') : `🔄 ${t('mcpStatus.sync')}`}
         </button>
       </div>
 
       <div className="mcp-summary">
         <div className="summary-item">
-          <span className="label">등록된 데이터베이스:</span>
-          <span className="value">{dbSummary.total_registered}개</span>
+          <span className="label">{t('mcpStatus.registeredDatabases')}:</span>
+          <span className="value">{dbSummary.total_registered}{language === 'ko' ? '개' : ''}</span>
         </div>
         <div className="summary-item">
-          <span className="label">MCP 연동:</span>
-          <span className="value">{dbSummary.mcp_enabled}개</span>
+          <span className="label">{t('mcpStatus.mcpIntegration')}:</span>
+          <span className="value">{dbSummary.mcp_enabled}{language === 'ko' ? '개' : ''}</span>
         </div>
         <div className="summary-item">
-          <span className="label">동기화 상태:</span>
+          <span className="label">{t('mcpStatus.syncStatus')}:</span>
           <span className={`value ${dbSummary.sync_status}`}>
-            {dbSummary.sync_status === 'synced' ? '✅ 동기화됨' : '⚠️ 비동기화'}
+            {dbSummary.sync_status === 'synced' ? `✅ ${t('mcpStatus.synced')}` : `⚠️ ${t('mcpStatus.notSynced')}`}
           </span>
         </div>
       </div>
 
       <div className="mcp-details">
         <div className="detail-section">
-          <h4>📊 데이터베이스 목록</h4>
+          <h4>📊 {t('mcpStatus.databaseList')}</h4>
           {context.databases.registered_databases.length > 0 ? (
             <ul className="database-list">
               {context.databases.registered_databases.map((db, index) => (
@@ -94,48 +98,48 @@ const MCPStatus = () => {
                   <span className="db-name">{db.name}</span>
                   <span className="db-info">{db.host}:{db.port}/{db.dbname}</span>
                   <span className={`mcp-status ${db.mcp_enabled ? 'enabled' : 'disabled'}`}>
-                    {db.mcp_enabled ? '🟢 MCP 연동' : '🔴 MCP 미연동'}
+                    {db.mcp_enabled ? `🟢 ${t('mcpStatus.mcpEnabled')}` : `🔴 ${t('mcpStatus.mcpDisabled')}`}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="no-data">등록된 데이터베이스가 없습니다.</p>
+            <p className="no-data">{t('mcpStatus.noDatabases')}</p>
           )}
         </div>
 
         <div className="detail-section">
-          <h4>🤖 AI 모델 상태</h4>
+          <h4>🤖 {t('mcpStatus.aiModelStatus')}</h4>
           {aiModel.status === 'model_selected' ? (
             <div className="ai-model-info">
               <span className="model-type">{aiModel.model.type}</span>
               <span className="model-name">{aiModel.model.name}</span>
               <span className="api-key-status">
-                {aiModel.model.has_api_key ? '🔑 API 키 설정됨' : '❌ API 키 없음'}
+                {aiModel.model.has_api_key ? `🔑 ${t('mcpStatus.apiKeySet')}` : `❌ ${t('mcpStatus.noApiKey')}`}
               </span>
             </div>
           ) : (
-            <p className="no-model">AI 모델이 선택되지 않았습니다.</p>
+            <p className="no-model">{t('mcpStatus.noModelSelected')}</p>
           )}
         </div>
 
         <div className="detail-section">
-          <h4>🛠️ MCP 도구</h4>
+          <h4>🛠️ {t('mcpStatus.mcpTools')}</h4>
           {mcpTools.available_tools.length > 0 ? (
             <div className="tools-summary">
-              <p>총 {mcpTools.available_tools.length}개 도구 사용 가능</p>
-              <p>데이터베이스 도구: {mcpTools.database_tools.length}개</p>
-              <p>일반 도구: {mcpTools.general_tools.length}개</p>
+              <p>{t('mcpStatus.totalTools').replace('{count}', mcpTools.available_tools.length)}</p>
+              <p>{t('mcpStatus.databaseTools').replace('{count}', mcpTools.database_tools.length)}</p>
+              <p>{t('mcpStatus.generalTools').replace('{count}', mcpTools.general_tools.length)}</p>
             </div>
           ) : (
-            <p className="no-tools">사용 가능한 MCP 도구가 없습니다.</p>
+            <p className="no-tools">{t('mcpStatus.noTools')}</p>
           )}
         </div>
       </div>
 
       {recommendations.length > 0 && (
         <div className="mcp-recommendations">
-          <h4>💡 추천사항</h4>
+          <h4>💡 {t('mcpStatus.recommendations')}</h4>
           <ul>
             {recommendations.map((rec, index) => (
               <li key={index}>{rec}</li>

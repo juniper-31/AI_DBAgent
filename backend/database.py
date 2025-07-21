@@ -334,9 +334,13 @@ def add_or_update_database(name, host, port, user, password, dbname, remark=None
     try:
         conn = get_app_db_connection()
         cur = conn.cursor()
+        
+        # 포트 번호 처리 - 빈 문자열이면 기본값 5432 사용
+        port_num = int(port) if port and port.strip() else 5432
+        
         cur.execute(
             "INSERT INTO databases (name, host, port, username, password, dbname, remark, cloudwatch_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (name) DO UPDATE SET host = EXCLUDED.host, port = EXCLUDED.port, username = EXCLUDED.username, password = EXCLUDED.password, dbname = EXCLUDED.dbname, remark = EXCLUDED.remark, cloudwatch_id = EXCLUDED.cloudwatch_id;",
-            (name, host, int(port), user, password, dbname, remark, cloudwatch_id)
+            (name, host, port_num, user, password, dbname, remark, cloudwatch_id)
         )
         conn.commit()
         
@@ -345,7 +349,7 @@ def add_or_update_database(name, host, port, user, password, dbname, remark=None
             from backend.services.mcp_manager import mcp_manager
             db_info = {
                 'host': host,
-                'port': int(port),
+                'port': port_num,  # 이미 처리된 포트 번호 사용
                 'user': user,
                 'password': password,
                 'dbname': dbname

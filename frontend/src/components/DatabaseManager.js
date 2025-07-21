@@ -1,8 +1,13 @@
 // DatabaseManager.js
 // DB 연결 관리, 폼, 리스트, 인라인 수정 등
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onDatabaseAdd }) {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
+  
   const [showForm, setShowForm] = useState(false);
   const [editingDb, setEditingDb] = useState(null);
   const [formData, setFormData] = useState({
@@ -161,7 +166,14 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
   const handleSelectBrowsedDb = (dbName) => {
     setFormData(prev => ({
       ...prev,
-      database: dbName
+      name: dbName, // DB 이름도 자동으로 설정
+      host: browseFormData.host,
+      port: browseFormData.port,
+      database: dbName,
+      username: browseFormData.username,
+      password: browseFormData.password,
+      remark: '', // 비고는 비워둠
+      cloudwatch_id: '', // CloudWatch ID는 비워둠
     }));
     setShowBrowseForm(false);
     setShowForm(true);
@@ -172,28 +184,28 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
     const newErrors = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'DB 이름을 입력하세요';
+      newErrors.name = t('dbManagement.errors.nameRequired');
     }
     
     if (!formData.host.trim()) {
-      newErrors.host = '호스트를 입력하세요';
+      newErrors.host = t('dbManagement.errors.hostRequired');
     }
     
     if (!formData.database.trim()) {
-      newErrors.database = '데이터베이스명을 입력하세요';
+      newErrors.database = t('dbManagement.errors.databaseRequired');
     }
     
     if (!formData.username.trim()) {
-      newErrors.username = '사용자명을 입력하세요';
+      newErrors.username = t('dbManagement.errors.usernameRequired');
     }
     
     if (!formData.password.trim()) {
-      newErrors.password = '비밀번호를 입력하세요';
+      newErrors.password = t('dbManagement.errors.passwordRequired');
     }
 
     // 포트 번호 검증
     if (formData.port && (isNaN(formData.port) || formData.port < 1 || formData.port > 65535)) {
-      newErrors.port = '유효한 포트 번호를 입력하세요 (1-65535)';
+      newErrors.port = t('dbManagement.errors.invalidPort');
     }
 
     setErrors(newErrors);
@@ -207,7 +219,7 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
     setBrowsedDatabases([]);
 
     if (!browseFormData.host.trim() || !browseFormData.username.trim() || !browseFormData.password.trim()) {
-      setBrowseError('호스트, 사용자명, 비밀번호는 필수입니다.');
+      setBrowseError(t('dbManagement.errors.browseRequired'));
       return;
     }
 
@@ -227,10 +239,10 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       if (result.status === 'success') {
         setBrowsedDatabases(result.databases);
       } else {
-        setBrowseError(result.message || '데이터베이스 목록 조회에 실패했습니다.');
+        setBrowseError(result.message || t('dbManagement.errors.browseFailed'));
       }
     } catch (error) {
-      setBrowseError('데이터베이스 목록 조회 중 오류가 발생했습니다.');
+      setBrowseError(t('dbManagement.errors.browseError'));
       console.error('Browse DBs error:', error);
     }
   };
@@ -247,38 +259,54 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('host', formData.host);
-      formDataToSend.append('port', formData.port);
+      formDataToSend.append('port', formData.port || ''); // 빈 문자열도 허용
       formDataToSend.append('user', formData.username);
       formDataToSend.append('password', formData.password);
       formDataToSend.append('dbname', formData.database);
       formDataToSend.append('remark', formData.remark || ''); // 비고 추가
-      formDataToSend.append('cloudwatch_id', formData.cloudwatch_id); // 추가
+      formDataToSend.append('cloudwatch_id', formData.cloudwatch_id || ''); // 추가
+      
+      console.log('Submitting database form:', {
+        name: formData.name,
+        host: formData.host,
+        port: formData.port,
+        user: formData.username,
+        database: formData.database
+      });
       
       const response = await fetch('/api/databases', {
         method: 'POST',
         body: formDataToSend
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log('Response result:', result);
+        
         if (result.status === 'success') {
           onDatabaseChange(); // 부모 컴포넌트에 변경 알림
           resetForm();
           setShowForm(false);
+          alert(t('dbManagement.success.added'));
         } else {
-          setErrors({ general: '저장에 실패했습니다.' });
+          setErrors({ general: result.message || t('dbManagement.errors.saveFailed') });
         }
       } else {
-        throw new Error('요청 실패');
+        const errorText = await response.text();
+        console.error('HTTP Error:', response.status, errorText);
+        setErrors({ general: `${t('dbManagement.errors.connectionError')} (${response.status}): ${errorText}` });
       }
     } catch (error) {
-      setErrors({ general: '연결 오류가 발생했습니다.' });
+      console.error('Submit error:', error);
+      setErrors({ general: `${t('dbManagement.errors.connectionError')}: ${error.message}` });
     }
   };
 
   // DB 삭제 처리
   const handleDelete = async (dbName) => {
-    if (!window.confirm(`정말로 "${dbName}" 데이터베이스 연결을 삭제하시겠습니까?`)) {
+    if (!window.confirm(t('dbManagement.success.deleteConfirm').replace('{name}', dbName))) {
       return;
     }
 
@@ -292,13 +320,13 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
         if (result.status === 'success') {
           onDatabaseDelete(dbName);
         } else {
-          alert('삭제에 실패했습니다.');
+          alert(t('dbManagement.errors.deleteFailed'));
         }
       } else {
         throw new Error('요청 실패');
       }
     } catch (error) {
-      alert('삭제 중 오류가 발생했습니다.');
+      alert(t('dbManagement.errors.deleteError'));
     }
   };
 
@@ -317,14 +345,14 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       const result = await response.json();
       if (result.success) {
         setConnectionStatus(prev => ({ ...prev, [db.name]: 'success' }));
-        alert('연결 테스트 성공!');
+        alert(t('dbManagement.success.testSuccess'));
       } else {
         setConnectionStatus(prev => ({ ...prev, [db.name]: 'fail' }));
-        alert(`연결 테스트 실패: ${result.message}`);
+        alert(`${t('dbManagement.errors.testFailed')}: ${result.message}`);
       }
     } catch (error) {
       setConnectionStatus(prev => ({ ...prev, [db.name]: 'fail' }));
-      alert('연결 테스트 중 오류가 발생했습니다.');
+      alert(t('dbManagement.errors.connectionError'));
     }
   };
 
@@ -333,19 +361,19 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       {/* 헤더 */}
       <div className="page-header">
         <div className="manager-header">
-          <h2>데이터베이스 연결 관리</h2>
+          <h2>{t('dbManagement.title')}</h2>
           <div className="button-group">
             <button 
               onClick={toggleForm} 
               className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`}
             >
-              {showForm ? '취소' : '새 DB 추가'}
+              {showForm ? t('dbManagement.cancel') : t('dbManagement.addNewDb')}
             </button>
             <button 
               onClick={toggleBrowseForm} 
               className={`btn ${showBrowseForm ? 'btn-secondary' : 'btn-info'}`}
             >
-              {showBrowseForm ? '취소' : 'DB 목록 조회'}
+              {showBrowseForm ? t('dbManagement.cancel') : t('dbManagement.browseDb')}
             </button>
           </div>
         </div>
@@ -357,7 +385,7 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       {showForm && (
         <div className="form-container">
           <form onSubmit={handleSubmit} className="db-form">
-            <h3>{editingDb ? 'DB 연결 수정' : '새 DB 연결 추가'}</h3>
+            <h3>{editingDb ? t('dbManagement.editDbConnection') : t('dbManagement.addDbConnection')}</h3>
             
             {errors.general && (
               <div className="error-message">{errors.general}</div>
@@ -365,14 +393,14 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="name">DB 이름 *</label>
+                <label htmlFor="name">{t('dbManagement.dbName')} *</label>
                 <input
                   type="text"
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="예: production_db"
+                  placeholder={t('dbManagement.placeholders.dbName')}
                   className={errors.name ? 'error' : ''}
                 />
                 {errors.name && <span className="error-text">{errors.name}</span>}
@@ -381,28 +409,28 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="host">호스트 *</label>
+                <label htmlFor="host">{t('dbManagement.host')} *</label>
                 <input
                   type="text"
                   id="host"
                   name="host"
                   value={formData.host}
                   onChange={handleInputChange}
-                  placeholder="예: localhost 또는 192.168.1.100"
+                  placeholder={t('dbManagement.placeholders.host')}
                   className={errors.host ? 'error' : ''}
                 />
                 {errors.host && <span className="error-text">{errors.host}</span>}
               </div>
               
               <div className="form-group">
-                <label htmlFor="port">포트</label>
+                <label htmlFor="port">{t('dbManagement.port')}</label>
                 <input
                   type="number"
                   id="port"
                   name="port"
                   value={formData.port}
                   onChange={handleInputChange}
-                  placeholder="기본값 사용"
+                  placeholder={t('dbManagement.placeholders.port')}
                   className={errors.port ? 'error' : ''}
                 />
                 {errors.port && <span className="error-text">{errors.port}</span>}
@@ -411,14 +439,14 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="database">데이터베이스명 *</label>
+                <label htmlFor="database">{t('dbManagement.database')} *</label>
                 <input
                   type="text"
                   id="database"
                   name="database"
                   value={formData.database}
                   onChange={handleInputChange}
-                  placeholder="예: myapp_production"
+                  placeholder={t('dbManagement.placeholders.database')}
                   className={errors.database ? 'error' : ''}
                 />
                 {errors.database && <span className="error-text">{errors.database}</span>}
@@ -427,28 +455,28 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="username">사용자명 *</label>
+                <label htmlFor="username">{t('dbManagement.username')} *</label>
                 <input
                   type="text"
                   id="username"
                   name="username"
                   value={formData.username}
                   onChange={handleInputChange}
-                  placeholder="예: dbuser"
+                  placeholder={t('dbManagement.placeholders.username')}
                   className={errors.username ? 'error' : ''}
                 />
                 {errors.username && <span className="error-text">{errors.username}</span>}
               </div>
               
               <div className="form-group">
-                <label htmlFor="password">비밀번호 *</label>
+                <label htmlFor="password">{t('dbManagement.password')} *</label>
                 <input
                   type="password"
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="비밀번호 입력"
+                  placeholder={t('dbManagement.placeholders.password')}
                   className={errors.password ? 'error' : ''}
                 />
                 {errors.password && <span className="error-text">{errors.password}</span>}
@@ -457,27 +485,27 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="remark">비고(선택)</label>
+                <label htmlFor="remark">{t('dbManagement.remark')}</label>
                 <input
                   type="text"
                   id="remark"
                   name="remark"
                   value={formData.remark}
                   onChange={handleInputChange}
-                  placeholder="예: AWS 계정/용도/설명 등"
+                  placeholder={t('dbManagement.placeholders.remark')}
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="cloudwatch_id">AWS RDS 인스턴스ID (CloudWatch용)</label>
+              <label htmlFor="cloudwatch_id">{t('dbManagement.cloudwatchId')}</label>
               <input
                 type="text"
                 id="cloudwatch_id"
                 name="cloudwatch_id"
                 value={formData.cloudwatch_id}
                 onChange={handleInputChange}
-                placeholder="예: rds-xxxx, aurora-xxx 등 AWS 인스턴스ID"
+                placeholder={t('dbManagement.placeholders.cloudwatchId')}
                 autoComplete="off"
               />
               {errors.cloudwatch_id && <div className="form-error">{errors.cloudwatch_id}</div>}
@@ -485,10 +513,10 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
-                {editingDb ? '수정' : '추가'}
+                {editingDb ? t('dbManagement.edit') : t('dbManagement.add')}
               </button>
               <button type="button" onClick={toggleForm} className="btn btn-secondary">
-                취소
+                {t('dbManagement.cancel')}
               </button>
             </div>
           </form>
@@ -499,74 +527,74 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
       {showBrowseForm && (
         <div className="form-container">
           <form onSubmit={handleBrowseDatabases} className="db-form">
-            <h3>DB 인스턴스에서 목록 조회</h3>
+            <h3>{t('dbManagement.browseTitle')}</h3>
             {browseError && (
               <div className="error-message">{browseError}</div>
             )}
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="browse-host">호스트 *</label>
+                <label htmlFor="browse-host">{t('dbManagement.host')} *</label>
                 <input
                   type="text"
                   id="browse-host"
                   name="host"
                   value={browseFormData.host}
                   onChange={handleBrowseInputChange}
-                  placeholder="예: localhost 또는 RDS 엔드포인트"
+                  placeholder={t('dbManagement.placeholders.browseHost')}
                   required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="browse-port">포트</label>
+                <label htmlFor="browse-port">{t('dbManagement.port')}</label>
                 <input
                   type="number"
                   id="browse-port"
                   name="port"
                   value={browseFormData.port}
                   onChange={handleBrowseInputChange}
-                  placeholder="기본값 5432"
+                  placeholder={t('dbManagement.placeholders.browsePort')}
                 />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="browse-username">사용자명 *</label>
+                <label htmlFor="browse-username">{t('dbManagement.username')} *</label>
                 <input
                   type="text"
                   id="browse-username"
                   name="username"
                   value={browseFormData.username}
                   onChange={handleBrowseInputChange}
-                  placeholder="예: postgres"
+                  placeholder={t('dbManagement.placeholders.browseUsername')}
                   required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="browse-password">비밀번호 *</label>
+                <label htmlFor="browse-password">{t('dbManagement.password')} *</label>
                 <input
                   type="password"
                   id="browse-password"
                   name="password"
                   value={browseFormData.password}
                   onChange={handleBrowseInputChange}
-                  placeholder="비밀번호 입력"
+                  placeholder={t('dbManagement.placeholders.password')}
                   required
                 />
               </div>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-info">
-                DB 목록 조회
+                {t('dbManagement.browseDb')}
               </button>
               <button type="button" onClick={toggleBrowseForm} className="btn btn-secondary">
-                취소
+                {t('dbManagement.cancel')}
               </button>
             </div>
           </form>
 
           {browsedDatabases.length > 0 && (
             <div className="browsed-databases-list">
-              <h4>조회된 데이터베이스 ({browsedDatabases.length}개)</h4>
+              <h4>{t('dbManagement.browsedDatabases')} ({browsedDatabases.length}개)</h4>
               <ul>
                 {browsedDatabases.map((dbName, index) => (
                   <li key={index}>
@@ -575,7 +603,7 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
                       onClick={() => handleSelectBrowsedDb(dbName)}
                       className="btn btn-sm btn-outline"
                     >
-                      선택
+                      {t('dbManagement.select')}
                     </button>
                   </li>
                 ))}
@@ -591,14 +619,14 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
           <table className="db-table">
             <thead>
               <tr>
-                <th>이름</th>
-                <th>호스트</th>
-                <th>포트</th>
-                <th>DB명</th>
-                <th>사용자</th>
-                <th>비고</th>
-                <th>Connection</th>
-                <th>액션</th>
+                <th>{t('dbManagement.dbName')}</th>
+                <th>{t('dbManagement.host')}</th>
+                <th>{t('dbManagement.port')}</th>
+                <th>{t('dbManagement.database')}</th>
+                <th>{t('dbManagement.username')}</th>
+                <th>{t('dbManagement.remark')}</th>
+                <th>{t('dbManagement.connection')}</th>
+                <th>{t('dbManagement.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -606,8 +634,8 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
                 <tr key={db.name}>
                   <td>{db.name}</td>
                   <td>{db.host}</td>
-                  <td>{db.port || '기본값'}</td>
-                  <td>{db.dbname || '모든 DB'}</td>
+                  <td>{db.port || t('common.defaultValue')}</td>
+                  <td>{db.dbname || 'All DBs'}</td>
                   <td>{db.user}</td>
                   <td>{db.remark || ''}</td>
                   <td>
@@ -618,23 +646,23 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
                     <button 
                       onClick={() => testConnection(db)}
                       className="btn btn-sm btn-outline"
-                      title="연결 테스트"
+                      title={t('dbManagement.test')}
                     >
-                      🔗 테스트
+                      🔗 {t('dbManagement.test')}
                     </button>
                     <button 
                       onClick={() => startEdit(db)}
                       className="btn btn-sm btn-outline"
-                      title="수정"
+                      title={t('dbManagement.edit')}
                     >
-                      ✏️ 수정
+                      ✏️ {t('dbManagement.edit')}
                     </button>
                     <button 
                       onClick={() => handleDelete(db.name)}
                       className="btn btn-sm btn-danger"
-                      title="삭제"
+                      title={t('dbManagement.delete')}
                     >
-                      🗑️ 삭제
+                      🗑️ {t('dbManagement.delete')}
                     </button>
                   </td>
                 </tr>
@@ -643,8 +671,8 @@ function DatabaseManager({ databases, onDatabaseChange, onDatabaseDelete, onData
           </table>
         ) : (
           <div className="empty-state">
-            <p>등록된 데이터베이스 연결이 없습니다.</p>
-            <p>새 DB 연결을 추가해보세요!</p>
+            <p>{t('dbManagement.noConnections')}</p>
+            <p>{t('dbManagement.addNewConnection')}</p>
           </div>
         )}
       </div>

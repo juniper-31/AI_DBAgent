@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 function renderMarkdownTable(md) {
   const tableMatch = md.match(/\|.*\|/g);
@@ -63,6 +65,9 @@ function renderAutoTable(data) {
 }
 
 function ChatComponent({ selectedDb, databases, onDbChange }) {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
+  
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,27 +86,27 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
 
   const suggestedQuestions = [
     {
-      title: '성능 분석',
+      title: t('chat.performanceAnalysis'),
       questions: [
-        '오늘 가장 오래 걸린 쿼리 보여줘',
-        '슬로우 쿼리 10개만 보여줘',
-        '테이블별 row 수와 크기 알려줘'
+        t('chat.slowestQueries'),
+        t('chat.top10SlowQueries'),
+        t('chat.tableRowsAndSize')
       ]
     },
     {
-      title: '데이터 탐색',
+      title: t('chat.dataExploration'),
       questions: [
-        '가장 row가 많은 테이블 알려줘',
-        '최근 7일간 생성된 데이터 보여줘',
-        '사용자 테이블의 구조를 설명해줘'
+        t('chat.mostRowsTable'),
+        t('chat.recentData'),
+        t('chat.userTableStructure')
       ]
     },
     {
-      title: '시스템 상태',
+      title: t('chat.systemStatus'),
       questions: [
-        '현재 활성 연결 수는?',
-        '데이터베이스 크기와 사용량 알려줘',
-        '인덱스 사용 현황을 분석해줘'
+        t('chat.currentConnections'),
+        t('chat.databaseSizeUsage'),
+        t('chat.indexUsageAnalysis')
       ]
     }
   ];
@@ -129,7 +134,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           }
           const welcomeMessage = {
             role: 'assistant',
-            content: `🚀 **플레이북 "${playbook.name}" 실행을 시작합니다**\n\n📋 **설명:** ${playbook.description}\n\n📊 **총 ${playbook.steps.length}단계**로 구성되어 있습니다.`,
+            content: language === 'ko' 
+              ? `🚀 **플레이북 "${playbook.name}" 실행을 시작합니다**\n\n📋 **설명:** ${playbook.description}\n\n📊 **총 ${playbook.steps.length}단계**로 구성되어 있습니다.`
+              : `🚀 **Starting playbook "${playbook.name}" execution**\n\n📋 **Description:** ${playbook.description}\n\n📊 **Total ${playbook.steps.length} steps** configured.`,
             timestamp: new Date().toLocaleTimeString(),
             isPlaybookMessage: true
           };
@@ -304,7 +311,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
   };
 
   const handleDeleteConversation = async (convId) => {
-    if (window.confirm('정말로 이 대화를 삭제하시겠습니까?')) {
+    if (window.confirm(t('chat.deleteConversationConfirm'))) {
       try {
         await axios.delete(`/api/conversations/${convId}`);
         const convRes = await axios.get(`/api/conversations?db_name=${selectedDb}`);
@@ -317,7 +324,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         }
       } catch (error) {
         console.error('대화 삭제 실패:', error);
-        alert('대화 삭제에 실패했습니다.');
+        alert(t('chat.deleteConversationFailed'));
       }
     }
   };
@@ -363,7 +370,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           // 새 플레이북 대화 생성
           const newConvResponse = await axios.post('/api/conversations/new', new URLSearchParams({
             db_name: playbook.selectedDb,
-            title: `플레이북: ${playbook.name}`
+            title: `${language === 'ko' ? '플레이북' : 'Playbook'}: ${playbook.name}`
           }));
           if (newConvResponse.data.status === 'success') {
             conversationId = newConvResponse.data.conversation_id;
@@ -382,7 +389,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
       let enhancedPrompt = step.prompt;
       if (dbSchema && dbSchema.tables && dbSchema.tables.length > 0) {
         const schemaInfo = generateSchemaPrompt(dbSchema);
-        enhancedPrompt = `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[플레이북 단계 실행]\n단계: ${step.title}\n요청: ${step.prompt}`;
+        enhancedPrompt = language === 'ko' 
+          ? `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[플레이북 단계 실행]\n단계: ${step.title}\n요청: ${step.prompt}`
+          : `[Database Schema Information]\n${schemaInfo}\n\n[Playbook Step Execution]\nStep: ${step.title}\nRequest: ${step.prompt}`;
       }
       formData.append('prompt', enhancedPrompt);
       formData.append('conversation_id', conversationId);
@@ -429,7 +438,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           setCurrentPlaybookStep(playbook.steps.length); // 모든 단계 완료
           const completionMessage = {
             role: 'assistant',
-            content: `🎉 **플레이북 "${playbook.name}" 실행 완료!**`,
+            content: language === 'ko' 
+              ? `🎉 **플레이북 "${playbook.name}" 실행 완료!**`
+              : `🎉 **Playbook "${playbook.name}" execution completed!**`,
             timestamp: new Date().toLocaleTimeString(),
             isPlaybookComplete: true
           };
@@ -455,13 +466,13 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
   };
 
   const stopPlaybook = () => {
-    if (window.confirm('플레이북 실행을 중단하시겠습니까?')) {
+    if (window.confirm(t('chat.playbookStopConfirm'))) {
       setRunningPlaybook(null);
       setCurrentPlaybookStep(0);
       setPlaybookAutoMode(false);
       const stopMessage = {
         role: 'assistant',
-        content: `⏹️ **플레이북 실행이 중단되었습니다.**`,
+        content: `⏹️ **${t('chat.playbookStopped')}**`,
         timestamp: new Date().toLocaleTimeString(),
         isPlaybookStop: true
       };
@@ -472,7 +483,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
   const handleSend = async () => {
     if (!input.trim() || !selectedDb) return;
     if (!selectedAiModel) {
-      alert('먼저 사용할 AI 모델을 선택해주세요.');
+      alert(t('chat.selectAiModelFirst'));
       return;
     }
     let conversationId = currentConversationId;
@@ -509,7 +520,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
       let enhancedPrompt = input;
       if (dbSchema && dbSchema.tables && dbSchema.tables.length > 0) {
         const schemaInfo = generateSchemaPrompt(dbSchema);
-        enhancedPrompt = `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[사용자 질문]\n${input}`;
+        enhancedPrompt = language === 'ko' 
+          ? `[데이터베이스 스키마 정보]\n${schemaInfo}\n\n[사용자 질문]\n${input}`
+          : `[Database Schema Information]\n${schemaInfo}\n\n[User Question]\n${input}`;
       }
       formData.append('prompt', enhancedPrompt);
       formData.append('conversation_id', conversationId);
@@ -560,7 +573,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
 
   const handleResetChat = async () => {
     if (!currentConversationId) return;
-    if (window.confirm('현재 대화의 모든 메시지를 초기화하시겠습니까?')) {
+    if (window.confirm(t('chat.resetChatConfirm'))) {
       try {
         const formData = new FormData();
         formData.append('conversation_id', currentConversationId);
@@ -570,7 +583,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         }
       } catch (error) {
         console.error('채팅 초기화 오류:', error);
-        alert('채팅 초기화에 실패했습니다.');
+        alert(t('chat.resetChatFailed'));
       }
     }
   };
@@ -579,22 +592,22 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
     <div className="chat-page-container">
       <div className={`conversation-sidebar${conversationSidebarCollapsed ? ' collapsed' : ''}`}> 
         <div className="sidebar-header">
-          <h3>💬 대화 목록</h3>
+          <h3>💬 {t('chat.conversationList')}</h3>
           <button 
             className="btn btn-primary btn-sm"
             onClick={() => {
               setCurrentConversationId(null);
               setMessages([]);
             }}
-            title="새 대화 시작"
+            title={t('chat.newConversationTitle')}
           >
-            ➕ 새 대화
+            ➕ {t('chat.newConversation')}
           </button>
           <button 
             className="sidebar-toggle-btn"
             style={{ marginLeft: 8 }}
             onClick={() => setConversationSidebarCollapsed(v => !v)}
-            title={conversationSidebarCollapsed ? '대화목록 펼치기' : '대화목록 접기'}
+            title={conversationSidebarCollapsed ? (language === 'ko' ? '대화목록 펼치기' : 'Expand conversation list') : (language === 'ko' ? '대화목록 접기' : 'Collapse conversation list')}
           >
             {conversationSidebarCollapsed ? '▶' : '◀'}
           </button>
@@ -603,8 +616,8 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           <div className="conversation-list-container">
             {conversations.length === 0 ? (
               <div className="no-conversations">
-                <p>아직 대화가 없습니다.</p>
-                <p>새 대화를 시작해보세요!</p>
+                <p>{t('chat.noConversations')}</p>
+                <p>{t('chat.startNewConversation')}</p>
               </div>
             ) : (
               <ul className="conversation-list list-group">
@@ -618,7 +631,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                       <div className="conversation-title">{conv.title}</div>
                       <div className="conversation-meta">{conv.updated_at}</div>
                     </div>
-                    <button className="delete-btn btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); handleDeleteConversation(conv.id); }}>삭제</button>
+                    <button className="delete-btn btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); handleDeleteConversation(conv.id); }}>{t('dbManagement.delete')}</button>
                   </li>
                 ))}
               </ul>
@@ -631,14 +644,14 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
         <div className="chat-header">
           <div className="header-left">
             <div className="db-selector">
-              <label htmlFor="db-select" className="prompt-label">DB 선택</label>
+              <label htmlFor="db-select" className="prompt-label">{t('chat.dbSelect')}</label>
               <select 
                 id="db-select" 
                 value={selectedDb || ''} 
                 onChange={(e) => onDbChange(e.target.value)}
               >
-                <option value="">DB를 선택하세요</option>
-                <option value="__ALL_DBS__">모든 DB</option>
+                <option value="">{language === 'ko' ? 'DB를 선택하세요' : 'Select Database'}</option>
+                <option value="__ALL_DBS__">{language === 'ko' ? '모든 DB' : 'All DBs'}</option>
                 {databases?.map(db => (
                   <option key={db.name} value={db.name}>
                     {db.name}
@@ -648,7 +661,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
             </div>
             
             <div className="ai-model-selector ms-3">
-              <label htmlFor="ai-model-select" className="prompt-label">AI 모델 선택</label>
+              <label htmlFor="ai-model-select" className="prompt-label">{t('chat.selectAiModel')}</label>
               <select 
                 id="ai-model-select" 
                 value={selectedAiModel} 
@@ -667,16 +680,16 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                         formData.append('name', selected.name);
                         await axios.post(selectApiEndpoint, formData);
                         setSelectedAiModel(selected.name);
-                        alert(`${selected.name} AI 모델이 선택되었습니다.`);
+                        alert(t('chat.aiModelSelected').replace('{name}', selected.name));
                       } catch (error) {
                         console.error('Error selecting AI model:', error);
-                        alert('AI 모델 선택에 실패했습니다.');
+                        alert(t('chat.aiModelSelectFailed'));
                       }
                     }
                   }
                 }}
               >
-                <option value="">AI 모델 선택</option>
+                <option value="">{t('chat.selectAiModel')}</option>
                 {aiModels.map(model => (
                   <option key={model.name} value={model.name}>
                     {model.name} ({model.type})
@@ -691,9 +704,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               <button 
                 onClick={handleResetChat} 
                 className="btn btn-outline-warning btn-sm"
-                title="현재 대화 초기화"
+                title={language === 'ko' ? '현재 대화 초기화' : 'Reset current conversation'}
               >
-                🔄 초기화
+                🔄 {t('chat.resetChat')}
               </button>
             )}
             <button 
@@ -702,9 +715,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                 setMessages([]);
               }}
               className="btn btn-outline-primary btn-sm ms-2"
-              title="새 대화 시작"
+              title={language === 'ko' ? '새 대화 시작' : 'Start new conversation'}
             >
-              ➕ 새 대화
+              ➕ {t('chat.newConversation')}
             </button>
           </div>
         </div> 
@@ -712,7 +725,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
           <div className="chat-box">
             {messages.length === 0 && !currentConversationId && (
               <div className="suggest-section">
-                <h3>💡 추천 질문</h3>
+                <h3>💡 {t('chat.suggestedQuestions')}</h3>
                 <div className="suggest-cards">
                   {suggestedQuestions.map((category, categoryIndex) => (
                     <div key={categoryIndex} className="suggest-category">
@@ -737,9 +750,9 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
             {runningPlaybook && (
               <div className="playbook-control-panel">
                 <div className="playbook-header">
-                  <h4>🚀 플레이북 실행 중: {runningPlaybook.name}</h4>
+                  <h4>🚀 {language === 'ko' ? '플레이북 실행 중' : 'Playbook Running'}: {runningPlaybook.name}</h4>
                   <div className="playbook-progress">
-                    진행률: {currentPlaybookStep + 1}/{runningPlaybook.steps.length} 
+                    {language === 'ko' ? '진행률' : 'Progress'}: {currentPlaybookStep + 1}/{runningPlaybook.steps.length} 
                     ({Math.round(((currentPlaybookStep + 1) / runningPlaybook.steps.length) * 100)}%)
                   </div>
                 </div>
@@ -748,13 +761,13 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                     onClick={togglePlaybookAutoMode}
                     className={`btn ${playbookAutoMode ? 'btn-warning' : 'btn-success'} btn-sm`}
                   >
-                    {playbookAutoMode ? '⏸️ 수동 모드' : '▶️ 자동 모드'}
+                    {playbookAutoMode ? `⏸️ ${t('chat.manualMode')}` : `▶️ ${t('chat.autoMode')}`}
                   </button>
                   <button 
                     onClick={stopPlaybook}
                     className="btn btn-danger btn-sm"
                   >
-                    ⏹️ 중단
+                    ⏹️ {t('chat.stop')}
                   </button>
                 </div>
               </div>
@@ -765,7 +778,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
                 <div className="message-content">
                   <div className="message-header">
                     <span className="message-role">
-                      {msg.role === 'user' ? '👤 사용자' : '🤖 AI'}
+                      {msg.role === 'user' ? `👤 ${language === 'ko' ? '사용자' : 'User'}` : `🤖 ${language === 'ko' ? 'AI' : 'AI'}`}
                     </span>
                     <span className="message-time">{msg.timestamp}</span>
                   </div>
@@ -881,7 +894,7 @@ function ChatComponent({ selectedDb, databases, onDbChange }) {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="질문을 입력하세요... (Shift+Enter로 줄바꿈)"
+              placeholder={t('chat.inputPlaceholder')}
               className="chat-input"
               rows={textareaRows}
               disabled={loading || !selectedDb}

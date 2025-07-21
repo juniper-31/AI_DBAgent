@@ -2044,3 +2044,62 @@ MCP Status Styles */
     width: 100%;
   }
 }
+/* Lan
+guage Toggle Styles */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.language-toggle {
+  width: 100%;
+}
+
+.language-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 6px;
+}
+
+.language-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.language-btn:active {
+  transform: translateY(0);
+}
+
+.language-flag {
+  font-size: 16px;
+}
+
+.language-text {
+  font-weight: 500;
+}
+
+/* Sidebar collapsed state에서 언어 버튼 */
+.sidebar.collapsed .language-btn {
+  padding: 8px;
+  justify-content: center;
+}
+
+.sidebar.collapsed .language-text {
+  display: none;
+}
+
+.sidebar.collapsed .language-flag {
+  font-size: 18px;
+}

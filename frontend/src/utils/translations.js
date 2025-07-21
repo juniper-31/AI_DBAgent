@@ -1,0 +1,770 @@
+export const translations = {
+  ko: {
+    // 사이드바 메뉴
+    sidebar: {
+      aiChat: 'AI 채팅',
+      dbManagement: 'DB 관리',
+      aiTools: 'AI 도구',
+      playbooks: '플레이북',
+      monitoring: '모니터링',
+      slowQuery: '슬로우 쿼리',
+      awsTools: 'AWS 도구',
+      awsResourceMonitoring: 'AWS 리소스 모니터링'
+    },
+    
+    // DB 관리 페이지
+    dbManagement: {
+      title: '데이터베이스 연결 관리',
+      addNewDb: '새 DB 추가',
+      browseDb: 'DB 목록 조회',
+      cancel: '취소',
+      addDbConnection: '새 DB 연결 추가',
+      editDbConnection: 'DB 연결 수정',
+      dbName: 'DB 이름',
+      host: '호스트',
+      port: '포트',
+      database: '데이터베이스명',
+      username: '사용자명',
+      password: '비밀번호',
+      remark: '비고(선택)',
+      cloudwatchId: 'AWS RDS 인스턴스ID (CloudWatch용)',
+      add: '추가',
+      edit: '수정',
+      test: '테스트',
+      delete: '삭제',
+      connection: 'Connection',
+      actions: '액션',
+      noConnections: '등록된 데이터베이스 연결이 없습니다.',
+      addNewConnection: '새 DB 연결을 추가해보세요!',
+      
+      // DB 목록 조회
+      browseTitle: 'DB 인스턴스에서 목록 조회',
+      browsedDatabases: '조회된 데이터베이스',
+      select: '선택',
+      
+      // 플레이스홀더
+      placeholders: {
+        dbName: '예: production_db',
+        host: '예: localhost 또는 192.168.1.100',
+        port: '기본값 사용',
+        database: '예: myapp_production',
+        username: '예: dbuser',
+        password: '비밀번호 입력',
+        remark: '예: AWS 계정/용도/설명 등',
+        cloudwatchId: '예: rds-xxxx, aurora-xxx 등 AWS 인스턴스ID',
+        browseHost: '예: localhost 또는 RDS 엔드포인트',
+        browsePort: '기본값 5432',
+        browseUsername: '예: postgres'
+      },
+      
+      // 에러 메시지
+      errors: {
+        nameRequired: 'DB 이름을 입력하세요',
+        hostRequired: '호스트를 입력하세요',
+        databaseRequired: '데이터베이스명을 입력하세요',
+        usernameRequired: '사용자명을 입력하세요',
+        passwordRequired: '비밀번호를 입력하세요',
+        invalidPort: '유효한 포트 번호를 입력하세요 (1-65535)',
+        browseRequired: '호스트, 사용자명, 비밀번호는 필수입니다.',
+        browseFailed: '데이터베이스 목록 조회에 실패했습니다.',
+        browseError: '데이터베이스 목록 조회 중 오류가 발생했습니다.',
+        saveFailed: '저장에 실패했습니다.',
+        deleteFailed: '삭제에 실패했습니다.',
+        deleteError: '삭제 중 오류가 발생했습니다.',
+        connectionError: '연결 오류가 발생했습니다.',
+        testFailed: '연결 테스트 실패'
+      },
+      
+      // 성공 메시지
+      success: {
+        added: '데이터베이스 연결이 성공적으로 추가되었습니다!',
+        testSuccess: '연결 테스트 성공!',
+        deleteConfirm: '정말로 "{name}" 데이터베이스 연결을 삭제하시겠습니까?'
+      }
+    },
+    
+    // 채팅 컴포넌트
+    chat: {
+      conversationList: '대화 목록',
+      newConversation: '새 대화',
+      deleteConversation: '대화 삭제',
+      dbSelect: 'DB 선택',
+      inputPlaceholder: '질문을 입력하세요... (Shift+Enter로 줄바꿈)',
+      send: '전송',
+      noConversations: '아직 대화가 없습니다.',
+      startNewConversation: '새 대화를 시작해보세요!',
+      newConversationTitle: '새 대화 시작',
+      databaseSize: '데이터베이스 크기와 사용량 알려줘',
+      activeConnections: '현재 활성 연결 수는?',
+      indexAnalysis: '인덱스 사용 현황을 분석해줘',
+      schemaInfo: '데이터베이스 스키마 정보',
+      playbookStep: '플레이북 단계 실행',
+      userQuestion: '사용자 질문',
+      step: '단계',
+      request: '요청',
+      databaseTables: '데이터베이스에 {count}개의 테이블이 있습니다',
+      table: '테이블',
+      suggestedQuestions: '추천 질문',
+      performanceAnalysis: '성능 분석',
+      dataExploration: '데이터 탐색',
+      systemStatus: '시스템 상태',
+      slowestQueries: '오늘 가장 오래 걸린 쿼리 보여줘',
+      top10SlowQueries: '슬로우 쿼리 10개만 보여줘',
+      tableRowsAndSize: '테이블별 row 수와 크기 알려줘',
+      mostRowsTable: '가장 row가 많은 테이블 알려줘',
+      recentData: '최근 7일간 생성된 데이터 보여줘',
+      userTableStructure: '사용자 테이블의 구조를 설명해줘',
+      currentConnections: '현재 활성 연결 수는?',
+      databaseSizeUsage: '데이터베이스 크기와 사용량 알려줘',
+      indexUsageAnalysis: '인덱스 사용 현황을 분석해줘',
+      resetChat: '초기화',
+      newChat: '새 대화',
+      resetChatConfirm: '현재 대화의 모든 메시지를 초기화하시겠습니까?',
+      resetChatFailed: '채팅 초기화에 실패했습니다.',
+      deleteConversationConfirm: '정말로 이 대화를 삭제하시겠습니까?',
+      deleteConversationFailed: '대화 삭제에 실패했습니다.',
+      selectAiModel: 'AI 모델 선택',
+      aiModelSelected: '{name} AI 모델이 선택되었습니다.',
+      aiModelSelectFailed: 'AI 모델 선택에 실패했습니다.',
+      selectAiModelFirst: '먼저 사용할 AI 모델을 선택해주세요.',
+      newConversationFailed: '새 대화 생성 실패',
+      requestError: '죄송합니다. 요청 처리 중 오류가 발생했습니다.',
+      unknownError: '알 수 없는 오류 발생',
+      generatedSql: '생성된 SQL',
+      queryResult: '쿼리 결과',
+      copy: '복사',
+      playbookRunning: '플레이북 실행 중',
+      playbookProgress: '진행률',
+      manualMode: '수동 모드',
+      autoMode: '자동 모드',
+      stop: '중단',
+      playbookStopConfirm: '플레이북 실행을 중단하시겠습니까?',
+      playbookStopped: '플레이북 실행이 중단되었습니다.',
+      nextStep: '다음 단계 실행',
+      playbookComplete: '플레이북 실행 완료!',
+      stepComplete: '단계 완료',
+      nextStepReady: '다음 단계 준비됨',
+      executing: '실행 중...'
+    },
+    
+    // 플레이북 컴포넌트
+    playbook: {
+      title: '플레이북 관리',
+      description: '데이터베이스 운영 작업을 자동화된 플레이북으로 효율적으로 수행하세요.',
+      selectedDb: '선택된 DB',
+      selectDbWarning: '⚠️ 플레이북을 실행하려면 먼저 데이터베이스를 선택해주세요.',
+      loading: '플레이북을 불러오는 중...',
+      noPlaybooks: '플레이북이 없습니다',
+      noAvailablePlaybooks: '사용 가능한 플레이북이 없습니다.',
+      noCategoryPlaybooks: '"{category}" 카테고리에 플레이북이 없습니다.',
+      executionSteps: '실행 단계 ({count}단계)',
+      runPlaybook: '🚀 플레이북 실행',
+      running: '실행 중...',
+      steps: '단계: {count}개',
+      usageGuide: '💡 플레이북 사용 가이드',
+      selectDatabase: '데이터베이스 선택',
+      selectDatabaseDesc: '상단에서 작업할 데이터베이스를 선택하세요',
+      selectPlaybook: '플레이북 선택',
+      selectPlaybookDesc: '목적에 맞는 플레이북을 카테고리별로 찾아보세요',
+      executeAndMonitor: '실행 및 모니터링',
+      executeAndMonitorDesc: '플레이북을 실행하고 AI 채팅에서 결과를 확인하세요',
+      selectDbFirst: '먼저 데이터베이스를 선택해주세요.',
+      playbookRunning: '플레이북 "{name}"을 AI 채팅에서 실행합니다...',
+      playbookError: '플레이북 실행 중 오류가 발생했습니다.',
+      fetchError: '플레이북 목록을 가져오는 중 오류가 발생했습니다.',
+      all: '전체',
+      categories: {
+        '모니터링': '모니터링',
+        '성능최적화': '성능최적화',
+        '보안감사': '보안감사',
+        '데이터품질': '데이터품질',
+        '백업복구': '백업복구',
+        '장애대응': '장애대응',
+        '컴플라이언스': '컴플라이언스',
+        '리포팅': '리포팅',
+        '전기검증': '전기검증',
+        '마이그레이션': '마이그레이션',
+        'API점검': 'API점검',
+        '네트워크': '네트워크',
+        '복제관리': '복제관리',
+        'DevOps': 'DevOps',
+        '가용성모니터': '가용성모니터',
+        '컨테이너': '컨테이너',
+        '리팩토링': '리팩토링',
+        '실시간모니터링': '실시간모니터링'
+      }
+    },
+    
+    // 모니터링 컴포넌트
+    monitoring: {
+      title: '데이터베이스 모니터링 (CloudWatch)',
+      selectedDb: '선택된 DB',
+      selectDb: 'DB 선택',
+      selectDbMessage: '모니터링할 데이터베이스를 선택해주세요.',
+      connections: '연결 수',
+      cpuUsage: 'CPU 사용률',
+      freeMemory: '남은 메모리',
+      freeStorage: '사용 가능 스토리지',
+      readLatency: '읽기 지연시간',
+      writeLatency: '쓰기 지연시간',
+      readIops: '읽기 IOPS',
+      writeIops: '쓰기 IOPS',
+      unit: {
+        count: '개',
+        percent: '%',
+        gb: 'GB',
+        ms: 'ms'
+      }
+    },
+    
+    // 슬로우 쿼리 컴포넌트
+    slowQuery: {
+      title: '슬로우 쿼리 분석',
+      selectedDb: '선택된 DB',
+      selectDb: 'DB 선택',
+      selectDbMessage: '분석할 데이터베이스를 선택해주세요.',
+      timeRange: '시간 범위',
+      minDuration: '최소 시간(초)',
+      sortBy: '정렬',
+      queryList: '슬로우 쿼리 목록 ({count}개)',
+      loading: '슬로우 쿼리 데이터를 가져오는 중...',
+      noQueries: '조건에 맞는 슬로우 쿼리가 없습니다.',
+      adjustFilters: '필터 조건을 조정해보세요.',
+      queryDetails: '쿼리 상세 정보',
+      executionTime: '실행 시간',
+      executionCount: '실행 횟수',
+      avgTime: '평균 시간',
+      rowsExamined: '검사된 행',
+      rowsSent: '반환된 행',
+      query: '쿼리',
+      analysis: '분석 및 최적화 제안',
+      closeDetails: '상세 정보 닫기',
+      timeRanges: {
+        '1h': '1시간',
+        '6h': '6시간',
+        '24h': '24시간',
+        '7d': '7일',
+        '30d': '30일'
+      },
+      sortOptions: {
+        duration: '실행 시간',
+        count: '실행 횟수',
+        avg_duration: '평균 실행 시간',
+        rows_examined: '검사된 행 수',
+        rows_sent: '반환된 행 수'
+      },
+      suggestions: {
+        addIndex: '인덱스 추가를 고려해보세요. 검사된 행 수가 반환된 행 수보다 훨씬 많습니다.',
+        frequentQuery: '이 쿼리가 매우 자주 실행되고 있습니다. 캐싱이나 쿼리 최적화를 고려해보세요.'
+      }
+    },
+    
+    // AI 관리 페이지
+    aiManager: {
+      title: 'AI 모델 관리',
+      name: '이름',
+      apiKey: 'API 키',
+      endpoint: '엔드포인트',
+      deploymentName: '배포 이름',
+      apiVersion: 'API 버전',
+      modelName: '모델명',
+      add: '추가',
+      select: '선택',
+      delete: '삭제',
+      selected: '선택됨',
+      addFailed: '추가에 실패했습니다.',
+      selectFailed: '선택에 실패했습니다.',
+      deleteFailed: '삭제에 실패했습니다.',
+      placeholders: {
+        name: '이름',
+        apiKey: 'API 키',
+        endpoint: '엔드포인트',
+        deploymentName: '배포 이름',
+        apiVersion: 'API 버전',
+        modelName: '모델명'
+      }
+    },
+
+    // AWS 통합 페이지
+    awsIntegration: {
+      title: 'AWS 통합',
+      credentialsList: 'Access Key 인증 정보',
+      addCredential: '인증 추가',
+      closeAdd: '추가 닫기',
+      noCredentials: '등록된 인증 정보가 없습니다.',
+      setDefault: '기본 사용',
+      default: '기본',
+      delete: '삭제',
+      connectionStatus: '연결 상태',
+      connected: '연결됨',
+      connecting: '연결 중...',
+      connectionError: '연결 오류',
+      disconnected: '연결 안됨',
+      accessKey: 'Access Key',
+      secretKey: 'Secret Key',
+      sessionToken: 'Session Token',
+      region: 'AWS 리전',
+      authMethod: '인증 방식',
+      optional: '옵션',
+      required: '필수',
+      connectionTest: '연결 테스트',
+      saveSettings: '설정 저장',
+      testing: '테스트 중...',
+      saving: '저장 중...',
+      settingsSaved: '설정이 저장되었습니다!',
+      saveFailed: '저장 실패',
+      connectionSuccess: '연결 성공!',
+      connectionFailed: '연결 실패',
+      noSelectedCredential: '선택된 인증정보가 없습니다.',
+      credentialAdded: '인증 정보가 추가되었습니다!',
+      addFailed: '추가 실패',
+      deleted: '삭제되었습니다.',
+      deleteFailed: '삭제 실패',
+      setAsDefault: '기본 인증 정보로 설정되었습니다.',
+      setDefaultFailed: '설정 실패',
+      securityNotice: '보안 주의사항',
+      securityTip1: 'AWS 자격 증명은 안전하게 암호화되어 저장됩니다.',
+      securityTip2: '최소 권한 원칙에 따라 필요한 권한만 부여하세요.',
+      iamRoleInfo: 'EC2/ECS/EKS 인스턴스에 할당된 IAM Role을 자동으로 사용합니다.',
+      iamRoleInfo2: '별도의 키 입력 없이 진행하세요.',
+      closeSettings: '설정 닫기',
+      changeSettings: '설정 변경',
+      add: '추가',
+      cancel: '취소'
+    },
+
+    // MCP 상태 페이지
+    mcpStatus: {
+      title: 'MCP 통합 상태',
+      sync: '동기화',
+      syncing: '동기화 중...',
+      loading: 'MCP 상태 로딩 중...',
+      loadError: 'MCP 상태를 불러올 수 없습니다.',
+      registeredDatabases: '등록된 데이터베이스',
+      mcpIntegration: 'MCP 연동',
+      syncStatus: '동기화 상태',
+      synced: '동기화됨',
+      notSynced: '비동기화',
+      databaseList: '데이터베이스 목록',
+      mcpEnabled: 'MCP 연동',
+      mcpDisabled: 'MCP 미연동',
+      noDatabases: '등록된 데이터베이스가 없습니다.',
+      aiModelStatus: 'AI 모델 상태',
+      apiKeySet: 'API 키 설정됨',
+      noApiKey: 'API 키 없음',
+      noModelSelected: 'AI 모델이 선택되지 않았습니다.',
+      mcpTools: 'MCP 도구',
+      totalTools: '총 {count}개 도구 사용 가능',
+      databaseTools: '데이터베이스 도구: {count}개',
+      generalTools: '일반 도구: {count}개',
+      noTools: '사용 가능한 MCP 도구가 없습니다.',
+      recommendations: '추천사항',
+      syncCompleted: '동기화가 완료되었습니다!',
+      syncFailed: '동기화 실패',
+      unknownError: '알 수 없는 오류'
+    },
+
+    // 공통
+    common: {
+      required: '필수',
+      optional: '선택',
+      loading: '로딩 중...',
+      defaultValue: '기본값',
+      noData: '데이터 없음',
+      refreshing: '새로고침 중...',
+      refresh: '🔄 새로고침',
+      autoRefresh: '자동 새로고침',
+      category: '카테고리',
+      filterByCategory: '카테고리별 필터',
+      all: '전체',
+      estimatedTime: '예상 시간',
+      steps: '단계',
+      tips: '활용 팁'
+    }
+  },
+  
+  en: {
+    // Sidebar menu
+    sidebar: {
+      aiChat: 'AI Chat',
+      dbManagement: 'DB Management',
+      aiTools: 'AI Tools',
+      playbooks: 'Playbooks',
+      monitoring: 'Monitoring',
+      slowQuery: 'Slow Query',
+      awsTools: 'AWS Tools',
+      awsResourceMonitoring: 'AWS Resource Monitoring'
+    },
+    
+    // DB Management page
+    dbManagement: {
+      title: 'Database Connection Management',
+      addNewDb: 'Add New DB',
+      browseDb: 'Browse DB List',
+      cancel: 'Cancel',
+      addDbConnection: 'Add New DB Connection',
+      editDbConnection: 'Edit DB Connection',
+      dbName: 'DB Name',
+      host: 'Host',
+      port: 'Port',
+      database: 'Database',
+      username: 'Username',
+      password: 'Password',
+      remark: 'Remark (Optional)',
+      cloudwatchId: 'AWS RDS Instance ID (for CloudWatch)',
+      add: 'Add',
+      edit: 'Edit',
+      test: 'Test',
+      delete: 'Delete',
+      connection: 'Connection',
+      actions: 'Actions',
+      noConnections: 'No registered database connections.',
+      addNewConnection: 'Add a new DB connection!',
+      
+      // DB Browse
+      browseTitle: 'Browse Database List from Instance',
+      browsedDatabases: 'Found Databases',
+      select: 'Select',
+      
+      // Placeholders
+      placeholders: {
+        dbName: 'e.g., production_db',
+        host: 'e.g., localhost or 192.168.1.100',
+        port: 'Use default',
+        database: 'e.g., myapp_production',
+        username: 'e.g., dbuser',
+        password: 'Enter password',
+        remark: 'e.g., AWS account/purpose/description',
+        cloudwatchId: 'e.g., rds-xxxx, aurora-xxx AWS instance ID',
+        browseHost: 'e.g., localhost or RDS endpoint',
+        browsePort: 'Default 5432',
+        browseUsername: 'e.g., postgres'
+      },
+      
+      // Error messages
+      errors: {
+        nameRequired: 'Please enter DB name',
+        hostRequired: 'Please enter host',
+        databaseRequired: 'Please enter database name',
+        usernameRequired: 'Please enter username',
+        passwordRequired: 'Please enter password',
+        invalidPort: 'Please enter valid port number (1-65535)',
+        browseRequired: 'Host, username, and password are required.',
+        browseFailed: 'Failed to browse database list.',
+        browseError: 'An error occurred while browsing databases.',
+        saveFailed: 'Failed to save.',
+        deleteFailed: 'Failed to delete.',
+        deleteError: 'An error occurred during deletion.',
+        connectionError: 'Connection error occurred.',
+        testFailed: 'Connection test failed'
+      },
+      
+      // Success messages
+      success: {
+        added: 'Database connection added successfully!',
+        testSuccess: 'Connection test successful!',
+        deleteConfirm: 'Are you sure you want to delete "{name}" database connection?'
+      }
+    },
+    
+    // Chat Component
+    chat: {
+      conversationList: 'Conversation List',
+      newConversation: 'New Chat',
+      deleteConversation: 'Delete Conversation',
+      dbSelect: 'Select DB',
+      inputPlaceholder: 'Enter your question... (Shift+Enter for new line)',
+      send: 'Send',
+      noConversations: 'No conversations yet.',
+      startNewConversation: 'Start a new conversation!',
+      newConversationTitle: 'Start New Conversation',
+      databaseSize: 'Tell me about database size and usage',
+      activeConnections: 'What is the current number of active connections?',
+      indexAnalysis: 'Analyze index usage status',
+      schemaInfo: 'Database Schema Information',
+      playbookStep: 'Playbook Step Execution',
+      userQuestion: 'User Question',
+      step: 'Step',
+      request: 'Request',
+      databaseTables: 'Database has {count} tables',
+      table: 'Table',
+      suggestedQuestions: 'Suggested Questions',
+      performanceAnalysis: 'Performance Analysis',
+      dataExploration: 'Data Exploration',
+      systemStatus: 'System Status',
+      slowestQueries: 'Show me the slowest queries today',
+      top10SlowQueries: 'Show me top 10 slow queries',
+      tableRowsAndSize: 'Tell me about table row counts and sizes',
+      mostRowsTable: 'Which table has the most rows?',
+      recentData: 'Show me data created in the last 7 days',
+      userTableStructure: 'Explain the user table structure',
+      currentConnections: 'What is the current number of active connections?',
+      databaseSizeUsage: 'Tell me about database size and usage',
+      indexUsageAnalysis: 'Analyze index usage status',
+      resetChat: 'Reset',
+      newChat: 'New Chat',
+      resetChatConfirm: 'Are you sure you want to reset all messages in the current conversation?',
+      resetChatFailed: 'Failed to reset chat.',
+      deleteConversationConfirm: 'Are you sure you want to delete this conversation?',
+      deleteConversationFailed: 'Failed to delete conversation.',
+      selectAiModel: 'Select AI Model',
+      aiModelSelected: '{name} AI model has been selected.',
+      aiModelSelectFailed: 'Failed to select AI model.',
+      selectAiModelFirst: 'Please select an AI model to use first.',
+      newConversationFailed: 'Failed to create new conversation',
+      requestError: 'Sorry, an error occurred while processing the request.',
+      unknownError: 'Unknown error occurred',
+      generatedSql: 'Generated SQL',
+      queryResult: 'Query Result',
+      copy: 'Copy',
+      playbookRunning: 'Playbook Running',
+      playbookProgress: 'Progress',
+      manualMode: 'Manual Mode',
+      autoMode: 'Auto Mode',
+      stop: 'Stop',
+      playbookStopConfirm: 'Are you sure you want to stop the playbook execution?',
+      playbookStopped: 'Playbook execution has been stopped.',
+      nextStep: 'Execute Next Step',
+      playbookComplete: 'Playbook execution completed!',
+      stepComplete: 'Step Complete',
+      nextStepReady: 'Next Step Ready',
+      executing: 'Executing...'
+    },
+    
+    // Playbook Component
+    playbook: {
+      title: 'Playbook Management',
+      description: 'Efficiently perform database operations with automated playbooks.',
+      selectedDb: 'Selected DB',
+      selectDbWarning: '⚠️ Please select a database first to run playbooks.',
+      loading: 'Loading playbooks...',
+      noPlaybooks: 'No playbooks available',
+      noAvailablePlaybooks: 'No playbooks available.',
+      noCategoryPlaybooks: 'No playbooks in "{category}" category.',
+      executionSteps: 'Execution Steps ({count} steps)',
+      runPlaybook: '🚀 Run Playbook',
+      running: 'Running...',
+      steps: 'Steps: {count}',
+      usageGuide: '💡 Playbook Usage Guide',
+      selectDatabase: 'Select Database',
+      selectDatabaseDesc: 'Choose the database to work with from the top',
+      selectPlaybook: 'Select Playbook',
+      selectPlaybookDesc: 'Find playbooks by category that match your purpose',
+      executeAndMonitor: 'Execute and Monitor',
+      executeAndMonitorDesc: 'Run the playbook and check results in AI chat',
+      selectDbFirst: 'Please select a database first.',
+      playbookRunning: 'Running playbook "{name}" in AI chat...',
+      playbookError: 'An error occurred while running the playbook.',
+      fetchError: 'An error occurred while fetching playbooks.',
+      all: 'All',
+      categories: {
+        '모니터링': 'Monitoring',
+        '성능최적화': 'Performance Optimization',
+        '보안감사': 'Security Audit',
+        '데이터품질': 'Data Quality',
+        '백업복구': 'Backup & Recovery',
+        '장애대응': 'Incident Response',
+        '컴플라이언스': 'Compliance',
+        '리포팅': 'Reporting',
+        '전기검증': 'Integration Testing',
+        '마이그레이션': 'Migration',
+        'API점검': 'API Testing',
+        '네트워크': 'Network',
+        '복제관리': 'Replication Management',
+        'DevOps': 'DevOps',
+        '가용성모니터': 'Availability Monitoring',
+        '컨테이너': 'Container',
+        '리팩토링': 'Refactoring',
+        '실시간모니터링': 'Real-time Monitoring'
+      }
+    },
+    
+    // Monitoring Component
+    monitoring: {
+      title: 'Database Monitoring (CloudWatch)',
+      selectedDb: 'Selected DB',
+      selectDb: 'Select DB',
+      selectDbMessage: 'Please select a database to monitor.',
+      connections: 'Connections',
+      cpuUsage: 'CPU Usage',
+      freeMemory: 'Free Memory',
+      freeStorage: 'Free Storage',
+      readLatency: 'Read Latency',
+      writeLatency: 'Write Latency',
+      readIops: 'Read IOPS',
+      writeIops: 'Write IOPS',
+      unit: {
+        count: '',
+        percent: '%',
+        gb: 'GB',
+        ms: 'ms'
+      }
+    },
+    
+    // Slow Query Component
+    slowQuery: {
+      title: 'Slow Query Analysis',
+      selectedDb: 'Selected DB',
+      selectDb: 'Select DB',
+      selectDbMessage: 'Please select a database to analyze.',
+      timeRange: 'Time Range',
+      minDuration: 'Min Duration (sec)',
+      sortBy: 'Sort By',
+      queryList: 'Slow Query List ({count} queries)',
+      loading: 'Loading slow query data...',
+      noQueries: 'No slow queries found matching the criteria.',
+      adjustFilters: 'Please adjust the filter conditions.',
+      queryDetails: 'Query Details',
+      executionTime: 'Execution Time',
+      executionCount: 'Execution Count',
+      avgTime: 'Average Time',
+      rowsExamined: 'Rows Examined',
+      rowsSent: 'Rows Sent',
+      query: 'Query',
+      analysis: 'Analysis & Optimization Suggestions',
+      closeDetails: 'Close Details',
+      timeRanges: {
+        '1h': '1 Hour',
+        '6h': '6 Hours',
+        '24h': '24 Hours',
+        '7d': '7 Days',
+        '30d': '30 Days'
+      },
+      sortOptions: {
+        duration: 'Execution Time',
+        count: 'Execution Count',
+        avg_duration: 'Average Execution Time',
+        rows_examined: 'Rows Examined',
+        rows_sent: 'Rows Sent'
+      },
+      suggestions: {
+        addIndex: 'Consider adding an index. The number of rows examined is much higher than rows sent.',
+        frequentQuery: 'This query is executed very frequently. Consider caching or query optimization.'
+      }
+    },
+    
+    // AI Manager page
+    aiManager: {
+      title: 'AI Model Management',
+      name: 'Name',
+      apiKey: 'API Key',
+      endpoint: 'Endpoint',
+      deploymentName: 'Deployment Name',
+      apiVersion: 'API Version',
+      modelName: 'Model Name',
+      add: 'Add',
+      select: 'Select',
+      delete: 'Delete',
+      selected: 'Selected',
+      addFailed: 'Failed to add.',
+      selectFailed: 'Failed to select.',
+      deleteFailed: 'Failed to delete.',
+      placeholders: {
+        name: 'Name',
+        apiKey: 'API Key',
+        endpoint: 'Endpoint',
+        deploymentName: 'Deployment Name',
+        apiVersion: 'API Version',
+        modelName: 'Model Name'
+      }
+    },
+
+    // AWS Integration page
+    awsIntegration: {
+      title: 'AWS Integration',
+      credentialsList: 'Access Key Credentials',
+      addCredential: 'Add Credential',
+      closeAdd: 'Close Add',
+      noCredentials: 'No registered credentials.',
+      setDefault: 'Set as Default',
+      default: 'Default',
+      delete: 'Delete',
+      connectionStatus: 'Connection Status',
+      connected: 'Connected',
+      connecting: 'Connecting...',
+      connectionError: 'Connection Error',
+      disconnected: 'Disconnected',
+      accessKey: 'Access Key',
+      secretKey: 'Secret Key',
+      sessionToken: 'Session Token',
+      region: 'AWS Region',
+      authMethod: 'Authentication Method',
+      optional: 'Optional',
+      required: 'Required',
+      connectionTest: 'Connection Test',
+      saveSettings: 'Save Settings',
+      testing: 'Testing...',
+      saving: 'Saving...',
+      settingsSaved: 'Settings saved successfully!',
+      saveFailed: 'Save failed',
+      connectionSuccess: 'Connection successful!',
+      connectionFailed: 'Connection failed',
+      noSelectedCredential: 'No selected credentials.',
+      credentialAdded: 'Credentials added successfully!',
+      addFailed: 'Add failed',
+      deleted: 'Deleted successfully.',
+      deleteFailed: 'Delete failed',
+      setAsDefault: 'Set as default credentials successfully.',
+      setDefaultFailed: 'Set default failed',
+      securityNotice: 'Security Notice',
+      securityTip1: 'AWS credentials are securely encrypted and stored.',
+      securityTip2: 'Grant only necessary permissions following the principle of least privilege.',
+      iamRoleInfo: 'Automatically uses IAM Role assigned to EC2/ECS/EKS instances.',
+      iamRoleInfo2: 'Proceed without entering separate keys.',
+      closeSettings: 'Close Settings',
+      changeSettings: 'Change Settings',
+      add: 'Add',
+      cancel: 'Cancel'
+    },
+
+    // MCP Status page
+    mcpStatus: {
+      title: 'MCP Integration Status',
+      sync: 'Sync',
+      syncing: 'Syncing...',
+      loading: 'Loading MCP status...',
+      loadError: 'Unable to load MCP status.',
+      registeredDatabases: 'Registered Databases',
+      mcpIntegration: 'MCP Integration',
+      syncStatus: 'Sync Status',
+      synced: 'Synced',
+      notSynced: 'Not Synced',
+      databaseList: 'Database List',
+      mcpEnabled: 'MCP Enabled',
+      mcpDisabled: 'MCP Disabled',
+      noDatabases: 'No registered databases.',
+      aiModelStatus: 'AI Model Status',
+      apiKeySet: 'API Key Set',
+      noApiKey: 'No API Key',
+      noModelSelected: 'No AI model selected.',
+      mcpTools: 'MCP Tools',
+      totalTools: 'Total {count} tools available',
+      databaseTools: 'Database tools: {count}',
+      generalTools: 'General tools: {count}',
+      noTools: 'No MCP tools available.',
+      recommendations: 'Recommendations',
+      syncCompleted: 'Sync completed successfully!',
+      syncFailed: 'Sync failed',
+      unknownError: 'Unknown error'
+    }
+  }
+};
+
+export const useTranslation = (language) => {
+  const t = (key) => {
+    const keys = key.split('.');
+    let value = translations[language];
+    
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = value[k];
+      } else {
+        return key; // 번역을 찾을 수 없으면 키 반환
+      }
+    }
+    
+    return value || key;
+  };
+  
+  return { t };
+};

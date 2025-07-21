@@ -1,8 +1,13 @@
 // SlowQueryComponent.js
 // CloudWatch/RDS 슬로우 쿼리 분석, 시각화
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
+  
   const [slowQueries, setSlowQueries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -17,19 +22,19 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
   const [showDetails, setShowDetails] = useState(false);
 
   const timeRanges = [
-    { value: '1h', label: '1시간' },
-    { value: '6h', label: '6시간' },
-    { value: '24h', label: '24시간' },
-    { value: '7d', label: '7일' },
-    { value: '30d', label: '30일' }
+    { value: '1h', label: t('slowQuery.timeRanges.1h') },
+    { value: '6h', label: t('slowQuery.timeRanges.6h') },
+    { value: '24h', label: t('slowQuery.timeRanges.24h') },
+    { value: '7d', label: t('slowQuery.timeRanges.7d') },
+    { value: '30d', label: t('slowQuery.timeRanges.30d') }
   ];
 
   const sortOptions = [
-    { value: 'duration', label: '실행 시간' },
-    { value: 'count', label: '실행 횟수' },
-    { value: 'avg_duration', label: '평균 실행 시간' },
-    { value: 'rows_examined', label: '검사된 행 수' },
-    { value: 'rows_sent', label: '반환된 행 수' }
+    { value: 'duration', label: t('slowQuery.sortOptions.duration') },
+    { value: 'count', label: t('slowQuery.sortOptions.count') },
+    { value: 'avg_duration', label: t('slowQuery.sortOptions.avg_duration') },
+    { value: 'rows_examined', label: t('slowQuery.sortOptions.rows_examined') },
+    { value: 'rows_sent', label: t('slowQuery.sortOptions.rows_sent') }
   ];
 
   // 슬로우 쿼리 데이터 가져오기
@@ -132,19 +137,19 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
     
     // 기본적인 분석
     if (query.rows_examined > query.rows_sent * 10) {
-      suggestions.push('인덱스 추가를 고려해보세요. 검사된 행 수가 반환된 행 수보다 훨씬 많습니다.');
+      suggestions.push(t('slowQuery.suggestions.addIndex'));
     }
     
     if (query.sql?.toLowerCase().includes('select *')) {
-      suggestions.push('SELECT * 대신 필요한 컬럼만 선택하는 것을 고려해보세요.');
+      suggestions.push(language === 'ko' ? 'SELECT * 대신 필요한 컬럼만 선택하는 것을 고려해보세요.' : 'Consider selecting only necessary columns instead of SELECT *.');
     }
     
     if (query.sql?.toLowerCase().includes('like %')) {
-      suggestions.push('LIKE 패턴이 %로 시작하면 인덱스를 사용할 수 없습니다. 다른 검색 방법을 고려해보세요.');
+      suggestions.push(language === 'ko' ? 'LIKE 패턴이 %로 시작하면 인덱스를 사용할 수 없습니다. 다른 검색 방법을 고려해보세요.' : 'LIKE patterns starting with % cannot use indexes. Consider other search methods.');
     }
     
     if (query.count > 100) {
-      suggestions.push('이 쿼리가 매우 자주 실행되고 있습니다. 캐싱이나 쿼리 최적화를 고려해보세요.');
+      suggestions.push(t('slowQuery.suggestions.frequentQuery'));
     }
     
     return suggestions;
@@ -155,9 +160,9 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
       {/* 헤더 */}
       <div className="component-header">
         <div className="header-left">
-          <h2>슬로우 쿼리 분석</h2>
+          <h2>{t('slowQuery.title')}</h2>
           {selectedDb && (
-            <span className="selected-db">선택된 DB: {selectedDb}</span>
+            <span className="selected-db">{t('slowQuery.selectedDb')}: {selectedDb}</span>
           )}
         </div>
         
@@ -168,7 +173,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
             onChange={(e) => onDbChange(e.target.value)}
             className="db-select"
           >
-            <option value="">DB 선택</option>
+            <option value="">{t('slowQuery.selectDb')}</option>
             {databases?.map(db => (
               <option key={db.name} value={db.name}>
                 {db.name}
@@ -194,7 +199,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
             type="number"
             value={filters.minDuration}
             onChange={(e) => handleFilterChange('minDuration', Number(e.target.value))}
-            placeholder="최소 시간(초)"
+            placeholder={t('slowQuery.minDuration')}
             className="min-duration-input"
             min="0"
             step="0.1"
@@ -227,35 +232,35 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
             disabled={loading || !selectedDb}
             className="btn btn-outline"
           >
-            {loading ? '로딩 중...' : '🔄 새로고침'}
+            {loading ? t('common.loading') : (language === 'ko' ? '🔄 새로고침' : '🔄 Refresh')}
           </button>
         </div>
       </div>
 
       {!selectedDb ? (
         <div className="no-db-selected">
-          <p>분석할 데이터베이스를 선택해주세요.</p>
+          <p>{t('slowQuery.selectDbMessage')}</p>
         </div>
       ) : (
         <div className="slow-query-content">
           {/* 슬로우 쿼리 목록 */}
           <div className="query-list">
-            <h3>슬로우 쿼리 목록 ({slowQueries.length}개)</h3>
+            <h3>{t('slowQuery.queryList').replace('{count}', slowQueries.length)}</h3>
             
             {loading ? (
-              <div className="loading">슬로우 쿼리 데이터를 가져오는 중...</div>
+              <div className="loading">{t('slowQuery.loading')}</div>
             ) : slowQueries.length > 0 ? (
               <div className="query-table-container">
                 <table className="query-table">
                   <thead>
                     <tr>
-                      <th>실행 시간</th>
-                      <th>실행 횟수</th>
-                      <th>평균 시간</th>
-                      <th>검사된 행</th>
-                      <th>반환된 행</th>
-                      <th>SQL 미리보기</th>
-                      <th>작업</th>
+                      <th>{t('slowQuery.executionTime')}</th>
+                      <th>{t('slowQuery.executionCount')}</th>
+                      <th>{t('slowQuery.avgTime')}</th>
+                      <th>{t('slowQuery.rowsExamined')}</th>
+                      <th>{t('slowQuery.rowsSent')}</th>
+                      <th>{language === 'ko' ? 'SQL 미리보기' : 'SQL Preview'}</th>
+                      <th>{language === 'ko' ? '작업' : 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -284,7 +289,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
                             }}
                             className="btn btn-sm btn-outline"
                           >
-                            상세보기
+                            {language === 'ko' ? '상세보기' : 'Details'}
                           </button>
                         </td>
                       </tr>
@@ -294,8 +299,8 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
               </div>
             ) : (
               <div className="no-queries">
-                <p>조건에 맞는 슬로우 쿼리가 없습니다.</p>
-                <p>필터 조건을 조정해보세요.</p>
+                <p>{t('slowQuery.noQueries')}</p>
+                <p>{t('slowQuery.adjustFilters')}</p>
               </div>
             )}
           </div>
@@ -304,7 +309,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
           {showDetails && selectedQuery && (
             <div className="query-details">
               <div className="details-header">
-                <h3>쿼리 상세 정보</h3>
+                <h3>{t('slowQuery.queryDetails')}</h3>
                 <button 
                   onClick={() => setShowDetails(false)}
                   className="close-btn"
@@ -316,30 +321,30 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
               <div className="details-content">
                 {/* 기본 정보 */}
                 <div className="detail-section">
-                  <h4>기본 정보</h4>
+                  <h4>{language === 'ko' ? '기본 정보' : 'Basic Information'}</h4>
                   <div className="info-grid">
                     <div className="info-item">
-                      <label>최대 실행 시간:</label>
+                      <label>{language === 'ko' ? '최대 실행 시간:' : 'Max Execution Time:'}</label>
                       <span>{formatDuration(selectedQuery.duration)}</span>
                     </div>
                     <div className="info-item">
-                      <label>평균 실행 시간:</label>
+                      <label>{language === 'ko' ? '평균 실행 시간:' : 'Average Execution Time:'}</label>
                       <span>{formatDuration(selectedQuery.avg_duration)}</span>
                     </div>
                     <div className="info-item">
-                      <label>실행 횟수:</label>
+                      <label>{language === 'ko' ? '실행 횟수:' : 'Execution Count:'}</label>
                       <span>{formatNumber(selectedQuery.count)}</span>
                     </div>
                     <div className="info-item">
-                      <label>검사된 행 수:</label>
+                      <label>{language === 'ko' ? '검사된 행 수:' : 'Rows Examined:'}</label>
                       <span>{formatNumber(selectedQuery.rows_examined)}</span>
                     </div>
                     <div className="info-item">
-                      <label>반환된 행 수:</label>
+                      <label>{language === 'ko' ? '반환된 행 수:' : 'Rows Sent:'}</label>
                       <span>{formatNumber(selectedQuery.rows_sent)}</span>
                     </div>
                     <div className="info-item">
-                      <label>효율성:</label>
+                      <label>{language === 'ko' ? '효율성:' : 'Efficiency:'}</label>
                       <span className={`efficiency ${selectedQuery.rows_examined > selectedQuery.rows_sent * 10 ? 'poor' : 'good'}`}>
                         {((selectedQuery.rows_sent / selectedQuery.rows_examined) * 100).toFixed(1)}%
                       </span>
@@ -356,14 +361,14 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
                       onClick={() => navigator.clipboard.writeText(selectedQuery.sql)}
                       className="copy-btn"
                     >
-                      복사
+                      {t('chat.copy')}
                     </button>
                   </div>
                 </div>
 
                 {/* 최적화 제안 */}
                 <div className="detail-section">
-                  <h4>최적화 제안</h4>
+                  <h4>{language === 'ko' ? '최적화 제안' : 'Optimization Suggestions'}</h4>
                   <div className="suggestions">
                     {analyzeQuery(selectedQuery).map((suggestion, index) => (
                       <div key={index} className="suggestion-item">
@@ -372,7 +377,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
                       </div>
                     ))}
                     {analyzeQuery(selectedQuery).length === 0 && (
-                      <p className="no-suggestions">현재 쿼리에 대한 특별한 최적화 제안이 없습니다.</p>
+                      <p className="no-suggestions">{language === 'ko' ? '현재 쿼리에 대한 특별한 최적화 제안이 없습니다.' : 'No specific optimization suggestions for this query.'}</p>
                     )}
                   </div>
                 </div>
@@ -380,7 +385,7 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
                 {/* 실행 계획 (있는 경우) */}
                 {queryDetails?.execution_plan && (
                   <div className="detail-section">
-                    <h4>실행 계획</h4>
+                    <h4>{language === 'ko' ? '실행 계획' : 'Execution Plan'}</h4>
                     <div className="execution-plan">
                       <pre><code>{JSON.stringify(queryDetails.execution_plan, null, 2)}</code></pre>
                     </div>
@@ -390,15 +395,15 @@ function SlowQueryComponent({ selectedDb, databases, onDbChange }) {
                 {/* 시간별 실행 통계 */}
                 {queryDetails?.time_stats && (
                   <div className="detail-section">
-                    <h4>시간별 실행 통계</h4>
+                    <h4>{language === 'ko' ? '시간별 실행 통계' : 'Hourly Execution Statistics'}</h4>
                     <div className="time-stats">
                       <table className="stats-table">
                         <thead>
                           <tr>
-                            <th>시간대</th>
-                            <th>실행 횟수</th>
-                            <th>평균 시간</th>
-                            <th>최대 시간</th>
+                            <th>{language === 'ko' ? '시간대' : 'Hour'}</th>
+                            <th>{language === 'ko' ? '실행 횟수' : 'Count'}</th>
+                            <th>{language === 'ko' ? '평균 시간' : 'Avg Time'}</th>
+                            <th>{language === 'ko' ? '최대 시간' : 'Max Time'}</th>
                           </tr>
                         </thead>
                         <tbody>
