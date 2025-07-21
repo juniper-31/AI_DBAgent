@@ -17,6 +17,49 @@ def get_db():
     finally:
         db.close()
 
+@router.get('/aws/iam-role-info')
+async def get_iam_role_info(region: str = None):
+    """현재 EC2 인스턴스에 할당된 IAM Role 정보를 가져옵니다."""
+    try:
+        # 기본 리전 설정
+        if not region:
+            region = "ap-northeast-2"
+            
+        # IAM Role 방식으로 세션 생성
+        session = boto3.Session(region_name=region)
+        sts = session.client('sts')
+        identity = sts.get_caller_identity()
+        
+        # ARN에서 역할 이름 추출: arn:aws:sts::123456789012:assumed-role/MyRole/MyInstance
+        arn = identity.get('Arn', '')
+        role_info = {
+            'arn': arn,
+            'account': identity.get('Account', ''),
+            'userId': identity.get('UserId', ''),
+            'roleName': 'Unknown'
+        }
+        
+        if 'assumed-role' in arn:
+            role_parts = arn.split('/')
+            if len(role_parts) >= 2:
+                role_info['roleName'] = role_parts[-2]
+                
+        # IAM 정책 정보 가져오기 시도
+        try:
+            iam = session.client('iam')
+            role_name = role_info['roleName']
+            if role_name != 'Unknown':
+                # 역할에 연결된 정책 목록 가져오기
+                role_policies = iam.list_attached_role_policies(RoleName=role_name)
+                role_info['policies'] = [policy['PolicyName'] for policy in role_policies.get('AttachedPolicies', [])]
+        except Exception as policy_error:
+            # IAM 정책 정보를 가져오지 못해도 계속 진행
+            role_info['policyError'] = str(policy_error)
+            
+        return {"success": True, "roleInfo": role_info}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
 @router.post('/aws/auth/test')
 async def test_aws_credentials(payload: dict = Body(...)):
     try:
@@ -36,7 +79,42 @@ async def test_aws_credentials(payload: dict = Body(...)):
         
         sts = session.client('sts')
         identity = sts.get_caller_identity()
+        
+        # IAM Role 방식일 때 추가 정보 제공
+        if auth_type == 'iam_role':
+            arn = identity.get('Arn', '')
+            # ARN에서 역할 이름 추출: arn:aws:sts::123456789012:assumed-role/MyRole/MyInstance
+            if 'assumed-role' in arn:
+                role_name = arn.split('/')[-2] if len(arn.split('/')) >= 2 else 'Unknown'
+                identity['RoleName'] = role_name
+            
         return {"success": True, "identity": identity}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+@router.get('/aws/current-role')
+async def get_current_iam_role():
+    """현재 EC2 인스턴스에 할당된 IAM Role 정보 조회"""
+    try:
+        # IAM Role 방식으로 세션 생성
+        session = boto3.Session()
+        sts = session.client('sts')
+        identity = sts.get_caller_identity()
+        
+        arn = identity.get('Arn', '')
+        role_name = 'Unknown'
+        
+        # ARN에서 역할 이름 추출
+        if 'assumed-role' in arn:
+            role_name = arn.split('/')[-2] if len(arn.split('/')) >= 2 else 'Unknown'
+        
+        return {
+            "success": True,
+            "role_name": role_name,
+            "arn": arn,
+            "account": identity.get('Account', ''),
+            "user_id": identity.get('UserId', '')
+        }
     except Exception as e:
         return {"success": False, "message": str(e)}
 

@@ -33,6 +33,9 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
   const [newAccessKey, setNewAccessKey] = useState('');
   const [newSecretKey, setNewSecretKey] = useState('');
   const [newAwsRegion, setNewAwsRegion] = useState('ap-northeast-2');
+  // IAM Role 정보
+  const [currentIamRole, setCurrentIamRole] = useState(null);
+  const [iamRoleLoading, setIamRoleLoading] = useState(false);
 
   const awsRegions = [
     { value: 'us-east-1', label: 'US East (N. Virginia)' },
@@ -79,7 +82,37 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
 
   useEffect(() => {
     loadCredentials();
-  }, []);
+
+    // authType이 'iamRole'로 변경되면 IAM Role 정보 가져오기
+    if (authType === 'iamRole') {
+      fetchCurrentIamRole(newAwsRegion);
+    }
+  }, [authType]);
+
+  // 현재 IAM Role 정보 가져오기
+  const fetchCurrentIamRole = async (region = 'ap-northeast-2') => {
+    setIamRoleLoading(true);
+    try {
+      const response = await fetch(`/aws/iam-role-info?region=${region}`);
+      const data = await response.json();
+      if (data.success) {
+        setCurrentIamRole(data.roleInfo);
+      } else {
+        setCurrentIamRole({ error: data.message });
+      }
+    } catch (error) {
+      setCurrentIamRole({ error: error.message });
+    } finally {
+      setIamRoleLoading(false);
+    }
+  };
+
+  // authType이 iamRole로 변경될 때 현재 IAM Role 정보 가져오기
+  useEffect(() => {
+    if (authType === 'iamRole') {
+      fetchCurrentIamRole();
+    }
+  }, [authType]);
 
   // RDS 인스턴스 목록 가져오기
   const fetchRdsInstances = useCallback(async () => {
@@ -138,7 +171,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
     setLoading(true); setError(''); setSuccess('');
     const cred = credentialsList.find(c => c.id === selectedId);
     if (!cred) { setError('선택된 인증정보가 없습니다.'); setLoading(false); return; }
-    
+
     const payload = {
       authType: cred.auth_type || 'access_key',
       accessKey: cred.access_key,
@@ -210,7 +243,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
   // 인증 정보 추가
   const handleAddCredential = async () => {
     setError(''); setSuccess(''); setLoading(true);
-    
+
     let payload;
     if (authType === 'iamRole') {
       payload = {
@@ -294,7 +327,7 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
       <div className="metric-header">
         <h4>{title}</h4>
         {status && (
-          <span 
+          <span
             className="status-badge"
             style={{ backgroundColor: getStatusColor(status) }}
           >
@@ -381,9 +414,73 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
                 {authType === 'iamRole' && (
                   <div className="form-group">
                     <label>IAM Role {language === 'ko' ? '기반 인증' : 'Authentication'}</label>
-                    <div style={{ color: '#888', fontSize: '14px' }}>
+                    <div style={{ color: '#888', fontSize: '14px', marginBottom: '10px' }}>
                       {t('awsIntegration.iamRoleInfo')}<br />
                       {t('awsIntegration.iamRoleInfo2')}
+                    </div>
+
+                    {/* 현재 IAM Role 정보 표시 */}
+                    <div className="iam-role-info-box">
+                      <h4>{language === 'ko' ? '현재 IAM Role 정보' : 'Current IAM Role Info'}</h4>
+                      {iamRoleLoading ? (
+                        <div className="loading-spinner">로딩 중...</div>
+                      ) : currentIamRole ? (
+                        currentIamRole.error ? (
+                          <div className="error-message">
+                            {language === 'ko' ? 'IAM Role 정보를 가져오는데 실패했습니다: ' : 'Failed to fetch IAM Role info: '}
+                            {currentIamRole.error}
+                          </div>
+                        ) : (
+                          <div className="iam-role-details">
+                            <div className="role-detail-row">
+                              <span className="role-label">{language === 'ko' ? '역할 이름' : 'Role Name'}:</span>
+                              <span className="role-value">{currentIamRole.roleName || 'Unknown'}</span>
+                            </div>
+                            <div className="role-detail-row">
+                              <span className="role-label">ARN:</span>
+                              <span className="role-value">{currentIamRole.arn || '-'}</span>
+                            </div>
+                            <div className="role-detail-row">
+                              <span className="role-label">{language === 'ko' ? 'AWS 계정' : 'AWS Account'}:</span>
+                              <span className="role-value">{currentIamRole.account || '-'}</span>
+                            </div>
+                            {currentIamRole.policies && (
+                              <div className="role-detail-row">
+                                <span className="role-label">{language === 'ko' ? '연결된 정책' : 'Attached Policies'}:</span>
+                                <span className="role-value">
+                                  {currentIamRole.policies.length > 0
+                                    ? currentIamRole.policies.join(', ')
+                                    : (language === 'ko' ? '정책 없음' : 'No policies')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      ) : (
+                        <div className="no-role-info">
+                          {language === 'ko' ? 'IAM Role 정보를 가져오는 중...' : 'Fetching IAM Role information...'}
+                        </div>
+                      )}
+                      <div className="form-group" style={{ marginTop: '10px' }}>
+                        <label>{language === 'ko' ? '리전' : 'Region'}</label>
+                        <select value={newAwsRegion} onChange={e => {
+                          setNewAwsRegion(e.target.value);
+                          fetchCurrentIamRole(e.target.value);
+                        }} className="form-control wide-input">
+                          {awsRegions.map(region => (
+                            <option key={region.value} value={region.value}>{region.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => fetchCurrentIamRole(newAwsRegion)}
+                        disabled={iamRoleLoading}
+                      >
+                        {iamRoleLoading
+                          ? (language === 'ko' ? '새로고침 중...' : 'Refreshing...')
+                          : (language === 'ko' ? '정보 새로고침' : 'Refresh Info')}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -429,9 +526,9 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
               </>
             )}
             <div className="form-actions">
-              <button 
-                className="btn btn-primary" 
-                onClick={handleAddCredential} 
+              <button
+                className="btn btn-primary"
+                onClick={handleAddCredential}
                 disabled={loading || (authType === 'accessKey' && (!newAccessKey || !newSecretKey))}
               >
                 {t('awsIntegration.add')}
@@ -603,14 +700,14 @@ function AwsIntegrationComponent({ selectedDb, databases }) {
               </div>
             </div>
             <div className="form-actions">
-              <button 
+              <button
                 onClick={handleTest}
                 disabled={loading || !selectedId}
                 className="btn btn-outline"
               >
                 {loading ? t('awsIntegration.testing') : `🔗 ${t('awsIntegration.connectionTest')}`}
               </button>
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={loading}
                 className="btn btn-primary"
